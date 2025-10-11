@@ -8,64 +8,115 @@ using System.Threading.Tasks;
 
 namespace Negocio.PoliticasEUC
 {
-     class EUC
+    public class EUC
     {
-        // Atributos
-
-        public string EUCId { get; set; }
+        public int EUCID { get; set; }
         public string Nombre { get; set; }
         public string Descripcion { get; set; }
         public string Criticidad { get; set; }
         public string Estado { get; set; }
-        // Constructor
-        public EUC(string nombre, string descripcion, string criticidad, string estado)
-        {
-            Nombre = nombre;
-            Descripcion = descripcion;
-            Criticidad = criticidad;
-            Estado = estado;
-        }
+
+        // Navegación (opción B)
+        public List<Certificacion> Certificaciones { get; set; } = new List<Certificacion>();
+        public List<Documentacion> Documentaciones { get; set; } = new List<Documentacion>();
+        public List<PlanAutomatizacion> Planes { get; set; } = new List<PlanAutomatizacion>();
 
         public class EUCService
         {
-            private List<EUC> _eucs = new List<EUC>();
+            private readonly List<EUC> _eucs = new List<EUC>();
             private int _nextId = 1;
-            // CREATE
-            public EUC CrearEUC(string EUCId, string nombre, string descripcion , string criticidad, string estado)
+
+            // Dependencias a servicios hijos
+            private readonly Certificacion.CertificacionService _certSvc;
+            private readonly Documentacion.DocumentacionService _docSvc;
+            private readonly PlanAutomatizacion.PlanAutomatizacionService _planSvc;
+
+            // Inyecta (pásame las mismas instancias que uses en el resto de la app)
+            public EUCService(
+                Certificacion.CertificacionService certSvc,
+                Documentacion.DocumentacionService docSvc,
+                PlanAutomatizacion.PlanAutomatizacionService planSvc)
             {
-                var nuevaEUC = new EUC(_nextId++,EUCId, nombre, descripcion, criticidad);
+                _certSvc = certSvc;
+                _docSvc = docSvc;
+                _planSvc = planSvc;
+            }
+
+            // Si prefieres, puedes agregar un ctor sin parámetros que cree implementaciones por defecto
+            // (solo si sus listas internas son estáticas o compartidas)
+            // public EUCService() : this(new Certificacion.CertificacionService(),
+            //                            new Documentacion.DocumentacionService(),
+            //                            new PlanAutomatizacion.PlanAutomatizacionService()) {}
+
+            // CREATE
+            public EUC CrearEUC(string nombre, string descripcion, string criticidad, string estado)
+            {
+                var nuevaEUC = new EUC
+                {
+                    EUCID = _nextId++,
+                    Nombre = nombre,
+                    Descripcion = descripcion,
+                    Criticidad = criticidad,
+                    Estado = estado
+                };
+
                 _eucs.Add(nuevaEUC);
                 return nuevaEUC;
             }
-            // READ - obtener todas
-            public List<EUC> ObtenerTodas()
-            {
-                return _eucs;
-            }
-            // READ - obtener por ID
+
+            // READ
+            public List<EUC> ObtenerTodas() => _eucs;
+
             public EUC ObtenerPorId(int id)
             {
-                return _eucs.Find(e => e.Id == id);
+                return _eucs.FirstOrDefault(e => e.EUCID == id);
             }
-            // UPDATE - actualizar datos de la EUC
-            public bool ActualizarEUC(int id, string nuevoNombre = null, string nuevoCriticidad = null, string nuevoEstado = null, string nuevoDescripcion = null)
+
+            // UPDATE
+            public bool ActualizarEUC(
+                int id,
+                string nuevoNombre = null,
+                string nuevaCriticidad = null,
+                string nuevoEstado = null,
+                string nuevaDescripcion = null)
             {
-                var euc = _eucs.Find(e => e.Id == id);
+                var euc = ObtenerPorId(id);
                 if (euc == null) return false;
-                if (!string.IsNullOrEmpty(nuevoNombre)) euc.Nombre = nuevoNombre;
-                if (!string.IsNullOrEmpty(nuevoCriticidad)) euc.Criticidad = nuevoCriticidad;
-                if (!string.IsNullOrEmpty(nuevoDescripcion)) euc.Descripcion = nuevoDescripcion;
-                if (!string.IsNullOrEmpty(nuevoEstado)) euc.Estado = nuevoEstado;
+
+                if (!string.IsNullOrWhiteSpace(nuevoNombre)) euc.Nombre = nuevoNombre.Trim();
+                if (!string.IsNullOrWhiteSpace(nuevaCriticidad)) euc.Criticidad = nuevaCriticidad.Trim();
+                if (!string.IsNullOrWhiteSpace(nuevaDescripcion)) euc.Descripcion = nuevaDescripcion.Trim();
+                if (!string.IsNullOrWhiteSpace(nuevoEstado)) euc.Estado = nuevoEstado.Trim();
                 return true;
             }
-            // DELETE - eliminar EUC
+
+            // DELETE con cascade manual
             public bool EliminarEUC(int id)
             {
-                var euc = _eucs.Find(e => e.Id == id);
+                var euc = ObtenerPorId(id);
                 if (euc == null) return false;
+
+                // 1) Borrar hijos (snapshot con ToList())
+                var certs = _certSvc.ListarPorEUC(id).ToList();   // Certificacion: ListarPorEUC ✅
+                foreach (var c in certs)
+                    _certSvc.Eliminar(c.IdCert);
+
+                var docs = _docSvc.ObtenerPorEUC(id).ToList();   // Documentacion: **ObtenerPorEUC** ❗
+                foreach (var d in docs)
+                    _docSvc.EliminarDocumentacion(d.IDoc);
+
+                var planes = _planSvc.ListarPorEUC(id).ToList();   // Plan: ListarPorEUC ✅
+                foreach (var p in planes)
+                    _planSvc.Eliminar(p.IdPlan);
+
+                // 2) Limpiar navegación (opcional)
+                euc.Certificaciones.Clear();
+                euc.Documentaciones.Clear();
+                euc.Planes.Clear();
+
+                // 3) Eliminar la EUC
                 return _eucs.Remove(euc);
             }
         }
     }
 }
-

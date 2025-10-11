@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Negocio.PoliticasEUC
 {
-     class AdminEUC
+     public class AdminEUC
     {
         // Atributos
         public string Nombre { get; set; }
