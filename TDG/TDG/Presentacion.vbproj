@@ -94,9 +94,9 @@
     <Import Include="System.Web.UI.HtmlControls" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="PoliticasEUC\AdminEUC.aspx" />
-    <Content Include="PoliticasEUC\DesarrolladorEUC.aspx" />
-    <Content Include="PoliticasEUC\DesarrolladorEUC.aspx.cs" />
+    <Content Include="AdminEUC.aspx" />
+    <Content Include="DesarrolladorEUC.aspx" />
+    <Content Include="DesarrolladorEUC.aspx.cs" />
     <Content Include="Web.config" />
   </ItemGroup>
   <ItemGroup>
@@ -120,17 +120,17 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
-    <Compile Include="PoliticasEUC\AdminEUC.aspx.designer.vb">
+    <Compile Include="AdminEUC.aspx.designer.vb">
       <DependentUpon>AdminEUC.aspx</DependentUpon>
     </Compile>
-    <Compile Include="PoliticasEUC\AdminEUC.aspx.vb">
+    <Compile Include="AdminEUC.aspx.vb">
       <DependentUpon>AdminEUC.aspx</DependentUpon>
       <SubType>ASPXCodebehind</SubType>
     </Compile>
-    <Compile Include="PoliticasEUC\DesarrolladorEUC.aspx.designer.vb">
+    <Compile Include="DesarrolladorEUC.aspx.designer.vb">
       <DependentUpon>DesarrolladorEUC.aspx</DependentUpon>
     </Compile>
-    <Compile Include="PoliticasEUC\DesarrolladorEUC.aspx.vb">
+    <Compile Include="DesarrolladorEUC.aspx.vb">
       <DependentUpon>DesarrolladorEUC.aspx</DependentUpon>
       <SubType>ASPXCodebehind</SubType>
     </Compile>
@@ -184,7 +184,7 @@
     <OptionInfer>On</OptionInfer>
   </PropertyGroup>
   <PropertyGroup>
-    <StartupObject />
+    <StartupObject>Sub Main</StartupObject>
   </PropertyGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.VisualBasic.targets" />
   <Import Project="$(VSToolsPath)\WebApplications\Microsoft.WebApplication.targets" Condition="'$(VSToolsPath)' != ''" />

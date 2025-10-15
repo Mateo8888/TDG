@@ -1,4 +1,4 @@
-﻿<%@ Page Language="vb" AutoEventWireup="false" CodeBehind="AdminEUC.aspx.vb" Inherits="TDG.WebForm1" %>
+﻿<%@ Page Language="vb" AutoEventWireup="false" CodeBehind="AdminEUC.aspx.vb" Inherits="WebForm1" %>
 
 <!DOCTYPE html>
 

@@ -1,6 +1,6 @@
 ﻿<%@ Page Language="VB" AutoEventWireup="false"
     CodeBehind="DesarrolladorEUC.aspx.vb"
-    Inherits="TDG.DesarrolladorEUC" %>
+    Inherits="DesarrolladorEUC" %>
 <!DOCTYPE html>
 <html lang="es">
 <head runat="server">
