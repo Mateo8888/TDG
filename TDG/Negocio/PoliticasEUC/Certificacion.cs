@@ -72,6 +72,18 @@ namespace Negocio.PoliticasEUC
                 return certificaciones.Where(c => c.EUCID == eucid).ToList();
             }
 
+            public Certificacion CertificarEUC(int eucId, bool aprobado, string observacion)
+            {
+                var nuevaCert = new Certificacion
+                {
+                    EUCID = eucId,
+                    EstadoCert = aprobado ? "Aprobada" : "Rechazada",
+                    FechaControl = DateTime.Now,
+                    Observacion = observacion?.Trim()
+                };
+
+                return Crear(nuevaCert);
+            }
             // UPDATE
             public bool Actualizar(Certificacion actualizada)
             {

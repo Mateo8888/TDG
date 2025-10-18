@@ -35,7 +35,7 @@ namespace TRABAJO
                     ShowModal("#modalDocumentacion");
                     break;
                 case "Plan":
-                    hfEUCID_Plan.Value = id.ToString();
+                    hfEUCID_Plan.Value = id.ToString(); // hfEUCID_PLAN
                     ShowModal("#modalPlan");
                     break;
             }
