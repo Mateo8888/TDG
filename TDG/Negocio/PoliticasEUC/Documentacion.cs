@@ -55,94 +55,138 @@ namespace Negocio.PoliticasEUC
 
         public class DocumentacionService
         {
-            private readonly List<Documentacion> _docs = new List<Documentacion>();
-            private int _nextId = 1;
+            private string connectionString = "Server=localhost;Database=PoliticasEUC;Trusted_Connection=True;";
+
+            private SqlConnection ObtenerConexion()
+            {
+                return new SqlConnection(connectionString);
+            }
 
             // CREATE
-            public Documentacion CrearDocumentacion(
-                int eucid,
-                string nombreEUC,
-                string proposito,
-                string proceso,
-                string uso,
-                string insumos,
-                string responsable,
-                string docTecnica,
-                string evControl)
+            public Documentacion CrearDocumentacion(Documentacion nueva)
             {
-                
-                var nuevaDoc = new Documentacion(
-                    eucid,
-                    nombreEUC,
-                    proposito,
-                    proceso,
-                    uso,
-                    insumos,
-                    responsable,
-                    docTecnica,
-                    evControl)
+                using (SqlConnection conn = ObtenerConexion())
                 {
-                    IDoc = _nextId++
-                };
+                    conn.Open();
+                    SqlCommand cmd = new SqlCommand(
+                        @"INSERT INTO Documentacion 
+                      (EUCId, NombreEUC, Proposito, Proceso, Uso, Insumos, Responsable, DocTecnica, EvControl)
+                      VALUES (@EUCId, @NombreEUC, @Proposito, @Proceso, @Uso, @Insumos, @Responsable, @DocTecnica, @EvControl);
+                      SELECT SCOPE_IDENTITY();", conn);
 
-                _docs.Add(nuevaDoc);
-                return nuevaDoc;
+                    cmd.Parameters.AddWithValue("@EUCId", nueva.EUCID);
+                    cmd.Parameters.AddWithValue("@NombreEUC", nueva.NombreEUC);
+                    cmd.Parameters.AddWithValue("@Proposito", nueva.Proposito);
+                    cmd.Parameters.AddWithValue("@Proceso", nueva.Proceso);
+                    cmd.Parameters.AddWithValue("@Uso", nueva.Uso);
+                    cmd.Parameters.AddWithValue("@Insumos", nueva.Insumos);
+                    cmd.Parameters.AddWithValue("@Responsable", nueva.Responsable);
+                    cmd.Parameters.AddWithValue("@DocTecnica", nueva.DocTecnica);
+                    cmd.Parameters.AddWithValue("@EvControl", nueva.EvControl);
+
+                    int idGenerado = Convert.ToInt32(cmd.ExecuteScalar());
+                    nueva.IDoc = idGenerado;
+                }
+                return nueva;
             }
 
-            // READ - 
+            // READ - Todas
             public List<Documentacion> ObtenerTodas()
             {
-                return new List<Documentacion>(_docs);
+                List<Documentacion> lista = new List<Documentacion>();
+                using (SqlConnection conn = ObtenerConexion())
+                {
+                    conn.Open();
+                    SqlCommand cmd = new SqlCommand("SELECT Id, EUCId, NombreEUC, Proposito, Proceso, Uso, Insumos, Responsable, DocTecnica, EvControl FROM Documentacion", conn);
+                    SqlDataReader reader = cmd.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        lista.Add(new Documentacion
+                        {
+                            IDoc = reader.GetInt32(0),
+                            EUCID = reader.GetInt32(1),
+                            NombreEUC = reader.GetString(2),
+                            Proposito = reader.GetString(3),
+                            Proceso = reader.GetString(4),
+                            Uso = reader.GetString(5),
+                            Insumos = reader.GetString(6),
+                            Responsable = reader.GetString(7),
+                            DocTecnica = reader.GetString(8),
+                            EvControl = reader.GetString(9)
+                        });
+                    }
+                }
+                return lista;
             }
 
-            // READ - por EUC
+            // READ - Por EUC
             public List<Documentacion> ObtenerPorEUC(int eucId)
             {
-                return _docs.Where(d => d.EUCID == eucId).ToList();
-            }
-
-            // READ - por ID de Documentación
-            public Documentacion ObtenerPorId(int idDoc)
-            {
-                return _docs.FirstOrDefault(d => d.IDoc == idDoc);
+                List<Documentacion> lista = new List<Documentacion>();
+                using (SqlConnection conn = ObtenerConexion())
+                {
+                    conn.Open();
+                    SqlCommand cmd = new SqlCommand("SELECT Id, EUCId, NombreEUC, Proposito, Proceso, Uso, Insumos, Responsable, DocTecnica, EvControl FROM Documentacion WHERE EUCId = @EUCId", conn);
+                    cmd.Parameters.AddWithValue("@EUCId", eucId);
+                    SqlDataReader reader = cmd.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        lista.Add(new Documentacion
+                        {
+                            IDoc = reader.GetInt32(0),
+                            EUCID = reader.GetInt32(1),
+                            NombreEUC = reader.GetString(2),
+                            Proposito = reader.GetString(3),
+                            Proceso = reader.GetString(4),
+                            Uso = reader.GetString(5),
+                            Insumos = reader.GetString(6),
+                            Responsable = reader.GetString(7),
+                            DocTecnica = reader.GetString(8),
+                            EvControl = reader.GetString(9)
+                        });
+                    }
+                }
+                return lista;
             }
 
             // UPDATE
-            public bool ActualizarDocumentacion(
-                int idDoc,                    
-                int? nuevoEUCID = null,
-                string nuevoNombreEUC = null,
-                string nuevoProposito = null,
-                string nuevoProceso = null,
-                string nuevoUso = null,
-                string nuevosInsumos = null,
-                string nuevoResponsable = null,
-                string nuevaDocTecnica = null,
-                string nuevaEvControl = null)
+            public bool ActualizarDocumentacion(Documentacion actualizada)
             {
-                var doc = ObtenerPorId(idDoc);
-                if (doc == null) return false;
+                using (SqlConnection conn = ObtenerConexion())
+                {
+                    conn.Open();
+                    SqlCommand cmd = new SqlCommand(
+                        @"UPDATE Documentacion SET 
+                      NombreEUC = @NombreEUC, Proposito = @Proposito, Proceso = @Proceso, Uso = @Uso, 
+                      Insumos = @Insumos, Responsable = @Responsable, DocTecnica = @DocTecnica, EvControl = @EvControl
+                      WHERE Id = @Id", conn);
 
-                if (nuevoEUCID.HasValue) doc.EUCID = nuevoEUCID.Value;
-                if (!string.IsNullOrWhiteSpace(nuevoNombreEUC)) doc.NombreEUC = nuevoNombreEUC.Trim();
-                if (!string.IsNullOrWhiteSpace(nuevoProposito)) doc.Proposito = nuevoProposito.Trim();
-                if (!string.IsNullOrWhiteSpace(nuevoProceso)) doc.Proceso = nuevoProceso.Trim();
-                if (!string.IsNullOrWhiteSpace(nuevoUso)) doc.Uso = nuevoUso.Trim();
-                if (!string.IsNullOrWhiteSpace(nuevosInsumos)) doc.Insumos = nuevosInsumos.Trim();
-                if (!string.IsNullOrWhiteSpace(nuevoResponsable)) doc.Responsable = nuevoResponsable.Trim();
-                if (!string.IsNullOrWhiteSpace(nuevaDocTecnica)) doc.DocTecnica = nuevaDocTecnica.Trim();
-                if (!string.IsNullOrWhiteSpace(nuevaEvControl)) doc.EvControl = nuevaEvControl.Trim();
+                    cmd.Parameters.AddWithValue("@NombreEUC", actualizada.NombreEUC);
+                    cmd.Parameters.AddWithValue("@Proposito", actualizada.Proposito);
+                    cmd.Parameters.AddWithValue("@Proceso", actualizada.Proceso);
+                    cmd.Parameters.AddWithValue("@Uso", actualizada.Uso);
+                    cmd.Parameters.AddWithValue("@Insumos", actualizada.Insumos);
+                    cmd.Parameters.AddWithValue("@Responsable", actualizada.Responsable);
+                    cmd.Parameters.AddWithValue("@DocTecnica", actualizada.DocTecnica);
+                    cmd.Parameters.AddWithValue("@EvControl", actualizada.EvControl);
+                    cmd.Parameters.AddWithValue("@Id", actualizada.IDoc);
 
-                return true;
+                    return cmd.ExecuteNonQuery() > 0;
+                }
             }
 
             // DELETE
             public bool EliminarDocumentacion(int idDoc)
             {
-                var doc = ObtenerPorId(idDoc);
-                if (doc == null) return false;
-                return _docs.Remove(doc);
+                using (SqlConnection conn = ObtenerConexion())
+                {
+                    conn.Open();
+                    SqlCommand cmd = new SqlCommand("DELETE FROM Documentacion WHERE Id = @Id", conn);
+                    cmd.Parameters.AddWithValue("@Id", idDoc);
+                    return cmd.ExecuteNonQuery() > 0;
+                }
             }
         }
     }
+}
 }

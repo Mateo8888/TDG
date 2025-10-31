@@ -5,17 +5,18 @@ using System.Text;
 using System.Threading.Tasks;
 /* using Negocio.Generales */
 /* using Transversal */
+using System.Data.SqlClient;
 
 namespace Negocio.PoliticasEUC
 {
     public class PlanAutomatizacion
     {
         // Atributos
-        public int IdPlan { get; set; }       
+        public int IdPlan { get; set; }
         public string Responsable { get; set; }
         public string Plan { get; set; }
         public int EUCID { get; set; }
-        public EUC EUC { get; set; }       
+        public EUC EUC { get; set; }
         // Constructor
         public PlanAutomatizacion(int eucid, string responsable, string plan)
         {
@@ -26,58 +27,125 @@ namespace Negocio.PoliticasEUC
 
         public class PlanAutomatizacionService
         {
-            private static readonly List<PlanAutomatizacion> planes = new List<PlanAutomatizacion>();
-            private static int contadorId = 1;
+            private string connectionString = "Server=localhost;Database=PoliticasEUC;Trusted_Connection=True;";
 
-            //Listar por ID de EUC
-            public List<PlanAutomatizacion> ListarPorEUC(int eucid)
+            private SqlConnection ObtenerConexion()
             {
-                return planes.Where(p => p.EUCID == eucid).ToList();
-            }
-            // Crear (solo si EUC es de criticidad alta)
-            public PlanAutomatizacion Crear(PlanAutomatizacion nuevo, string criticidadEUC)
-            {
-                if (!string.Equals(criticidadEUC, "Alta", StringComparison.OrdinalIgnoreCase))
-                {
-                    throw new InvalidOperationException("Solo se permite plan de automatización para EUC de criticidad Alta.");
-                }
-
-                nuevo.IdPlan = contadorId++;             
-                planes.Add(nuevo);
-                return nuevo;
+                return new SqlConnection(connectionString);
             }
 
-            // Leer
-            public PlanAutomatizacion ObtenerPorId(int id)
-            {
-                return planes.Find(p => p.IdPlan == id);                  
-            }
-
-            // Listar
+            // Listar todos los planes
             public List<PlanAutomatizacion> Listar()
             {
-                return planes;
+                List<PlanAutomatizacion> lista = new List<PlanAutomatizacion>();
+                using (SqlConnection conn = ObtenerConexion())
+                {
+                    conn.Open();
+                    SqlCommand cmd = new SqlCommand("SELECT IdPlan, Responsable, Plan, EUCID FROM PlanAutomatizacion", conn);
+                    SqlDataReader reader = cmd.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        lista.Add(new PlanAutomatizacion(
+                            reader.GetInt32(3), // EUCID
+                            reader.GetString(1), // Responsable
+                            reader.GetString(2)  // Plan
+                        )
+                        {
+                            IdPlan = reader.GetInt32(0)
+                        });
+                    }
+                }
+                return lista;
+            }
+
+            // Listar por EUC
+            public List<PlanAutomatizacion> ListarPorEUC(int eucid)
+            {
+                List<PlanAutomatizacion> lista = new List<PlanAutomatizacion>();
+                using (SqlConnection conn = ObtenerConexion())
+                {
+                    conn.Open();
+                    SqlCommand cmd = new SqlCommand("SELECT IdPlan, Responsable, Plan, EUCID FROM PlanAutomatizacion WHERE EUCID = @EUCID", conn);
+                    cmd.Parameters.AddWithValue("@EUCID", eucid);
+                    SqlDataReader reader = cmd.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        lista.Add(new PlanAutomatizacion(
+                            reader.GetInt32(3),
+                            reader.GetString(1),
+                            reader.GetString(2)
+                        )
+                        {
+                            IdPlan = reader.GetInt32(0)
+                        });
+                    }
+                }
+                return lista;
+            }
+
+            // Crear
+            public void Crear(PlanAutomatizacion nuevo)
+            {
+                using (SqlConnection conn = ObtenerConexion())
+                {
+                    conn.Open();
+                    SqlCommand cmd = new SqlCommand("INSERT INTO PlanAutomatizacion (Responsable, Plan, EUCID) VALUES (@Responsable, @Plan, @EUCID)", conn);
+                    cmd.Parameters.AddWithValue("@Responsable", nuevo.Responsable);
+                    cmd.Parameters.AddWithValue("@Plan", nuevo.Plan);
+                    cmd.Parameters.AddWithValue("@EUCID", nuevo.EUCID);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+
+            // Obtener por ID
+            public PlanAutomatizacion ObtenerPorId(int id)
+            {
+                PlanAutomatizacion plan = null;
+                using (SqlConnection conn = ObtenerConexion())
+                {
+                    conn.Open();
+                    SqlCommand cmd = new SqlCommand("SELECT IdPlan, Responsable, Plan, EUCID FROM PlanAutomatizacion WHERE IdPlan = @Id", conn);
+                    cmd.Parameters.AddWithValue("@Id", id);
+                    SqlDataReader reader = cmd.ExecuteReader();
+                    if (reader.Read())
+                    {
+                        plan = new PlanAutomatizacion(
+                            reader.GetInt32(3),
+                            reader.GetString(1),
+                            reader.GetString(2)
+                        )
+                        {
+                            IdPlan = reader.GetInt32(0)
+                        };
+                    }
+                }
+                return plan;
             }
 
             // Actualizar
             public bool Actualizar(PlanAutomatizacion actualizado)
             {
-                var existente = ObtenerPorId(actualizado.IdPlan);                 
-                if (existente == null) return false;
-
-                existente.Responsable = actualizado.Responsable;
-                existente.Plan = actualizado.Plan;
-                // existente.EUCID = actualizado.EUCID; 
-                return true;
+                using (SqlConnection conn = ObtenerConexion())
+                {
+                    conn.Open();
+                    SqlCommand cmd = new SqlCommand("UPDATE PlanAutomatizacion SET Responsable = @Responsable, Plan = @Plan WHERE IdPlan = @IdPlan", conn);
+                    cmd.Parameters.AddWithValue("@Responsable", actualizado.Responsable);
+                    cmd.Parameters.AddWithValue("@Plan", actualizado.Plan);
+                    cmd.Parameters.AddWithValue("@IdPlan", actualizado.IdPlan);
+                    return cmd.ExecuteNonQuery() > 0;
+                }
             }
 
             // Eliminar
             public bool Eliminar(int id)
             {
-                var existente = ObtenerPorId(id);
-                if (existente == null) return false;
-                planes.Remove(existente);
-                return true;
+                using (SqlConnection conn = ObtenerConexion())
+                {
+                    conn.Open();
+                    SqlCommand cmd = new SqlCommand("DELETE FROM PlanAutomatizacion WHERE IdPlan = @Id", conn);
+                    cmd.Parameters.AddWithValue("@Id", id);
+                    return cmd.ExecuteNonQuery() > 0;
+                }
             }
         }
     }

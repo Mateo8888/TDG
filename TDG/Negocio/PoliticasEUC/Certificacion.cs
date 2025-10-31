@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 // using Negocio.Generales; 
 // using Transversal;
+using System.Data.SqlClient;
 
 namespace Negocio.PoliticasEUC
 {
@@ -30,120 +31,118 @@ namespace Negocio.PoliticasEUC
 
         public class CertificacionService
         {
-            private static readonly List<Certificacion> certificaciones = new List<Certificacion>();
-            private static int contadorId = 1;
+            private string connectionString = "Server=localhost;Database=PoliticasEUC;Trusted_Connection=True;";
+
+            private SqlConnection ObtenerConexion()
+            {
+                return new SqlConnection(connectionString);
+            }
 
             // CREATE
             public Certificacion Crear(Certificacion nueva)
             {
-                if (nueva == null) throw new ArgumentNullException(nameof(nueva));
+                using (SqlConnection conn = ObtenerConexion())
+                {
+                    conn.Open();
+                    SqlCommand cmd = new SqlCommand(
+                        "INSERT INTO Certificacion (EUCId, EstadoCert, FechaControl, Observacion) " +
+                        "VALUES (@EUCId, @EstadoCert, @FechaControl, @Observacion); SELECT SCOPE_IDENTITY();", conn);
 
-                nueva.IdCert = contadorId++;
+                    cmd.Parameters.AddWithValue("@EUCId", nueva.EUCID);
+                    cmd.Parameters.AddWithValue("@EstadoCert", nueva.EstadoCert ?? "Pendiente");
+                    cmd.Parameters.AddWithValue("@FechaControl", nueva.FechaControl == default ? DateTime.Now : nueva.FechaControl);
+                    cmd.Parameters.AddWithValue("@Observacion", nueva.Observacion ?? (object)DBNull.Value);
 
-                // Asegurar estado por defecto
-                if (string.IsNullOrWhiteSpace(nueva.EstadoCert))
-                    nueva.EstadoCert = "Pendiente";
-
-                // Si no viene fecha informada, setear ahora (ajústalo a tu regla si solo quieres fecha para Aprobada/Rechazada)
-                if (nueva.FechaControl == default(DateTime))
-                    nueva.FechaControl = DateTime.Now;
-
-                // Observación opcional: normalizamos espacios
-                if (nueva.Observacion != null)
-                    nueva.Observacion = nueva.Observacion.Trim();
-
-                certificaciones.Add(nueva);
+                    int idGenerado = Convert.ToInt32(cmd.ExecuteScalar());
+                    nueva.IdCert = idGenerado;
+                }
                 return nueva;
             }
 
-            // READ
+            // READ: Obtener por ID
             public Certificacion ObtenerPorId(int idCert)
             {
-                return certificaciones.FirstOrDefault(c => c.IdCert == idCert);
+                Certificacion cert = null;
+                using (SqlConnection conn = ObtenerConexion())
+                {
+                    conn.Open();
+                    SqlCommand cmd = new SqlCommand("SELECT Id, EUCId, EstadoCert, FechaControl, Observacion FROM Certificacion WHERE Id = @Id", conn);
+                    cmd.Parameters.AddWithValue("@Id", idCert);
+
+                    SqlDataReader reader = cmd.ExecuteReader();
+                    if (reader.Read())
+                    {
+                        cert = new Certificacion
+                        {
+                            IdCert = reader.GetInt32(0),
+                            EUCID = reader.GetInt32(1),
+                            EstadoCert = reader.GetString(2),
+                            FechaControl = reader.GetDateTime(3),
+                            Observacion = reader.IsDBNull(4) ? null : reader.GetString(4)
+                        };
+                    }
+                }
+                return cert;
             }
 
+            // READ: Listar todas
             public List<Certificacion> Listar()
             {
-                return new List<Certificacion>(certificaciones);
-            }
-
-            public List<Certificacion> ListarPorEUC(int eucid)
-            {
-                return certificaciones.Where(c => c.EUCID == eucid).ToList();
-            }
-
-            public Certificacion CertificarEUC(int eucId, bool aprobado, string observacion)
-            {
-                var nuevaCert = new Certificacion
+                List<Certificacion> lista = new List<Certificacion>();
+                using (SqlConnection conn = ObtenerConexion())
                 {
-                    EUCID = eucId,
-                    EstadoCert = aprobado ? "Aprobada" : "Rechazada",
-                    FechaControl = DateTime.Now,
-                    Observacion = observacion?.Trim()
-                };
-
-                return Crear(nuevaCert);
+                    conn.Open();
+                    SqlCommand cmd = new SqlCommand("SELECT Id, EUCId, EstadoCert, FechaControl, Observacion FROM Certificacion", conn);
+                    SqlDataReader reader = cmd.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        lista.Add(new Certificacion
+                        {
+                            IdCert = reader.GetInt32(0),
+                            EUCID = reader.GetInt32(1),
+                            EstadoCert = reader.GetString(2),
+                            FechaControl = reader.GetDateTime(3),
+                            Observacion = reader.IsDBNull(4) ? null : reader.GetString(4)
+                        });
+                    }
+                }
+                return lista;
             }
+
             // UPDATE
             public bool Actualizar(Certificacion actualizada)
             {
-                if (actualizada == null) return false;
+                using (SqlConnection conn = ObtenerConexion())
+                {
+                    conn.Open();
+                    SqlCommand cmd = new SqlCommand(
+                        "UPDATE Certificacion SET EstadoCert = @EstadoCert, FechaControl = @FechaControl, Observacion = @Observacion WHERE Id = @Id", conn);
 
-                var existente = ObtenerPorId(actualizada.IdCert);
-                if (existente == null) return false;
+                    cmd.Parameters.AddWithValue("@EstadoCert", actualizada.EstadoCert);
+                    cmd.Parameters.AddWithValue("@FechaControl", actualizada.FechaControl);
+                    cmd.Parameters.AddWithValue("@Observacion", actualizada.Observacion ?? (object)DBNull.Value);
+                    cmd.Parameters.AddWithValue("@Id", actualizada.IdCert);
 
-                // Estado (si viene)
-                if (!string.IsNullOrWhiteSpace(actualizada.EstadoCert))
-                    existente.EstadoCert = actualizada.EstadoCert.Trim();
-
-                // Observación (si viene)
-                if (actualizada.Observacion != null)
-                    existente.Observacion = actualizada.Observacion.Trim();
-
-                // Fecha de control (si viene)
-                if (actualizada.FechaControl != default(DateTime))
-                    existente.FechaControl = actualizada.FechaControl;
-
-                // Si permites cambiar la asociación:
-                // existente.EUCID = actualizada.EUCID;
-
-                return true;
+                    return cmd.ExecuteNonQuery() > 0;
+                }
             }
 
             // DELETE
             public bool Eliminar(int idCert)
             {
-                var existente = ObtenerPorId(idCert);
-                if (existente == null) return false;
-                return certificaciones.Remove(existente);
+                using (SqlConnection conn = ObtenerConexion())
+                {
+                    conn.Open();
+                    SqlCommand cmd = new SqlCommand("DELETE FROM Certificacion WHERE Id = @Id", conn);
+                    cmd.Parameters.AddWithValue("@Id", idCert);
+                    return cmd.ExecuteNonQuery() > 0;
+                }
             }
-
-            // --- OPCIONAL: helpers directos para aprobar/rechazar con fecha/observación ---
-            public Certificacion Aprobar(int idCert, string observacion = null, DateTime? fecha = null)
-            {
-                var c = ObtenerPorId(idCert);
-                if (c == null) throw new InvalidOperationException("Certificación no encontrada.");
-
-                c.EstadoCert = "Aprobada";
-                c.Observacion = observacion?.Trim();
-                c.FechaControl = fecha ?? DateTime.Now;
-                return c;
-            }
-
-            public Certificacion Rechazar(int idCert, string observacion = null, DateTime? fecha = null)
-            {
-                var c = ObtenerPorId(idCert);
-                if (c == null) throw new InvalidOperationException("Certificación no encontrada.");
-
-                c.EstadoCert = "Rechazada";
-                c.Observacion = observacion?.Trim();
-                c.FechaControl = fecha ?? DateTime.Now;
-                return c;
-            }
-            // --- FIN OPCIONAL ---
         }
     }
 
-}
+    
+ 
+
 
 
