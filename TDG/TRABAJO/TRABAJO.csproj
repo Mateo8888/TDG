@@ -107,6 +107,7 @@
   <ItemGroup>
     <Content Include="About.aspx" />
     <Content Include="App_Code\AdminEUC.aspx" />
+    <Content Include="App_Code\Dashboard.aspx" />
     <Content Include="App_Code\DesarrolladorEUC.aspx" />
     <Content Include="Contact.aspx" />
     <Content Include="Content\bootstrap-theme.css" />
@@ -169,6 +170,13 @@
     </Compile>
     <Compile Include="App_Code\AdminEUC.aspx.designer.cs">
       <DependentUpon>AdminEUC.aspx</DependentUpon>
+    </Compile>
+    <Compile Include="App_Code\Dashboard.aspx.cs">
+      <DependentUpon>Dashboard.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="App_Code\Dashboard.aspx.designer.cs">
+      <DependentUpon>Dashboard.aspx</DependentUpon>
     </Compile>
     <Compile Include="App_Code\DesarrolladorEUC.aspx.cs">
       <DependentUpon>DesarrolladorEUC.aspx</DependentUpon>

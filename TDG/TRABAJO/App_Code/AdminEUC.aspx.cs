@@ -1,63 +1,165 @@
 ﻿using System;
-using System.Web.UI;
-using System.Web.UI.WebControls;
-using Negocio.PoliticasEUC;
+using System.Collections.Generic;
+using System.Web.Services;
+using System.Data.SqlClient;
+using System.Configuration;
 
-namespace PoliticasEUC.TRABAJO
+public partial class administradoreuc : System.Web.UI.Page
 {
-    public partial class AdminEUC : Page
-    {
-        private EUC.EUCService _eucService;
+    private static string connString = ConfigurationManager.ConnectionStrings["PoliticasEUC"].ConnectionString;
 
-        protected void Page_Load(object sender, EventArgs e)
+    public class EUC
+    {
+        public int EUCID { get; set; }
+        public string Nombre { get; set; }
+        public string Estado { get; set; }
+        public string Criticidad { get; set; }
+    }
+
+    public class EUCDetails
+    {
+        public EUC Info { get; set; }
+        public string Plan { get; set; }
+        public string ResponsablePlan { get; set; }
+        public string Documentacion { get; set; } // Podrías devolver JSON con todos los campos si lo necesitas
+        public string EstadoCertificacion { get; set; }
+    }
+
+    // ============================
+    // Listar EUCs
+    // ============================
+    [WebMethod]
+    public static List<EUC> GetEUCList()
+    {
+        List<EUC> lista = new List<EUC>();
+        using (SqlConnection conn = new SqlConnection(connString))
         {
-            if (!IsPostBack)
+            string query = "SELECT EUCID, Nombre, Estado, Criticidad FROM EUC";
+            SqlCommand cmd = new SqlCommand(query, conn);
+            conn.Open();
+            SqlDataReader reader = cmd.ExecuteReader();
+            while (reader.Read())
             {
-                InicializarServicios();
-                CargarEUCs();
+                lista.Add(new EUC
+                {
+                    EUCID = Convert.ToInt32(reader["EUCID"]),
+                    Nombre = reader["Nombre"].ToString(),
+                    Estado = reader["Estado"].ToString(),
+                    Criticidad = reader["Criticidad"].ToString()
+                });
             }
         }
+        return lista;
+    }
 
-        private void InicializarServicios()
+    // ============================
+    // Detalles de EUC
+    // ============================
+    [WebMethod]
+    public static EUCDetails GetEUCDetails(int id)
+    {
+        EUCDetails details = new EUCDetails();
+        using (SqlConnection conn = new SqlConnection(connString))
         {
-            var certSvc = new Certificacion.CertificacionService();
-            var docSvc = new Documentacion.DocumentacionService();
-            var planSvc = new PlanAutomatizacion.PlanAutomatizacionService();
+            conn.Open();
 
-            _eucService = new EUC.EUCService(certSvc, docSvc, planSvc);
+            // Info EUC
+            string queryEUC = "SELECT EUCID, Nombre, Estado, Criticidad FROM EUC WHERE EUCID=@Id";
+            SqlCommand cmdEUC = new SqlCommand(queryEUC, conn);
+            cmdEUC.Parameters.AddWithValue("@Id", id);
+            SqlDataReader readerEUC = cmdEUC.ExecuteReader();
+            if (readerEUC.Read())
+            {
+                details.Info = new EUC
+                {
+                    EUCID = Convert.ToInt32(readerEUC["EUCID"]),
+                    Nombre = readerEUC["Nombre"].ToString(),
+                    Estado = readerEUC["Estado"].ToString(),
+                    Criticidad = readerEUC["Criticidad"].ToString()
+                };
+            }
+            readerEUC.Close();
+
+            // Plan
+            string queryPlan = "SELECT Responsable, [Plan] FROM PlanAutomatizacion WHERE EUCID=@Id";
+            SqlCommand cmdPlan = new SqlCommand(queryPlan, conn);
+            cmdPlan.Parameters.AddWithValue("@Id", id);
+            SqlDataReader readerPlan = cmdPlan.ExecuteReader();
+            if (readerPlan.Read())
+            {
+                details.ResponsablePlan = readerPlan["Responsable"].ToString();
+                details.Plan = readerPlan["Plan"].ToString();
+            }
+            readerPlan.Close();
+
+            // Documentación (simplificado)
+            string queryDoc = "SELECT Proposito FROM Documentacion WHERE EUCID=@Id";
+            SqlCommand cmdDoc = new SqlCommand(queryDoc, conn);
+            cmdDoc.Parameters.AddWithValue("@Id", id);
+            SqlDataReader readerDoc = cmdDoc.ExecuteReader();
+            if (readerDoc.Read())
+            {
+                details.Documentacion = readerDoc["Proposito"].ToString();
+            }
+            readerDoc.Close();
+
+            // Certificación
+            string queryCert = "SELECT EstadoCert FROM Certificacion WHERE EUCID=@Id";
+            SqlCommand cmdCert = new SqlCommand(queryCert, conn);
+            cmdCert.Parameters.AddWithValue("@Id", id);
+            SqlDataReader readerCert = cmdCert.ExecuteReader();
+            if (readerCert.Read())
+            {
+                details.EstadoCertificacion = readerCert["EstadoCert"].ToString();
+            }
+            readerCert.Close();
         }
+        return details;
+    }
 
-        private void CargarEUCs()
+    // ============================
+    // Aprobar EUC
+    // ============================
+    [WebMethod]
+    public static string ApproveEUC(int id)
+    {
+        using (SqlConnection conn = new SqlConnection(connString))
         {
-            var listaEUCs = _eucService.ObtenerTodas();
-            rptEUCs.DataSource = listaEUCs;
-            rptEUCs.DataBind();
-        }
+            conn.Open();
+            string query = "UPDATE Certificacion SET EstadoCert='Aprobado', FechaControl=GETDATE() WHERE EUCID=@Id";
+            SqlCommand cmd = new SqlCommand(query, conn);
+            cmd.Parameters.AddWithValue("@Id", id);
+            cmd.ExecuteNonQuery();
 
-        protected void btnAprobar_Click(object sender, EventArgs e)
+            // Actualizar estado EUC
+            string updateEUC = "UPDATE EUC SET Estado='Completo' WHERE EUCID=@Id";
+            SqlCommand cmdEUC = new SqlCommand(updateEUC, conn);
+            cmdEUC.Parameters.AddWithValue("@Id", id);
+            cmdEUC.ExecuteNonQuery();
+        }
+        return "EUC aprobada correctamente";
+    }
+
+    // ============================
+    // Rechazar EUC
+    // ============================
+    [WebMethod]
+    public static string RejectEUC(int id)
+    {
+        using (SqlConnection conn = new SqlConnection(connString))
         {
-            var btn = (Button)sender;
-            int eucId = Convert.ToInt32(btn.CommandArgument);
-            string observacion = Request.Form["txtObservacion" + eucId];
+            conn.Open();
+            string query = "UPDATE Certificacion SET EstadoCert='Rechazado', FechaControl=GETDATE() WHERE EUCID=@Id";
+            SqlCommand cmd = new SqlCommand(query, conn);
+            cmd.Parameters.AddWithValue("@Id", id);
+            cmd.ExecuteNonQuery();
 
-            var certSvc = new Certificacion.CertificacionService();
-            certSvc.CertificarEUC(eucId, true, observacion);
-
-            InicializarServicios();
-            CargarEUCs();
+            // Actualizar estado EUC
+            string updateEUC = "UPDATE EUC SET Estado='Rechazado' WHERE EUCID=@Id";
+            SqlCommand cmdEUC = new SqlCommand(updateEUC, conn);
+            cmdEUC.Parameters.AddWithValue("@Id", id);
+            cmdEUC.ExecuteNonQuery();
         }
-
-        protected void btnRechazar_Click(object sender, EventArgs e)
-        {
-            var btn = (Button)sender;
-            int eucId = Convert.ToInt32(btn.CommandArgument);
-            string observacion = Request.Form["txtObservacion" + eucId];
-
-            var certSvc = new Certificacion.CertificacionService();
-            certSvc.CertificarEUC(eucId, false, observacion);
-
-            InicializarServicios();
-            CargarEUCs();
-        }
+        return "EUC rechazada correctamente";
     }
 }
