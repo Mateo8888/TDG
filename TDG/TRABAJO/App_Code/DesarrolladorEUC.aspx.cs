@@ -5,10 +5,43 @@ using System.Web.Services;
 using System.Data.SqlClient;
 using System.Configuration;
 
-public partial class desarrollador : System.Web.UI.Page
+public partial class Desarrollador : System.Web.UI.Page
 {
     // Obtener cadena de conexión desde Web.config
     private static string connString = ConfigurationManager.ConnectionStrings["PoliticasEUC"].ConnectionString;
+
+
+
+    // [WebMethod]
+    // public static object CreateEUC(string nombre, string descripcion, string criticidad, string estado) { /* return { ok=true, id=... } */ }
+
+    // [WebMethod]
+    // public static object UpdateEUC(int id, string nombre, string descripcion, string criticidad, string estado) { /* ok */ }
+
+
+    // [WebMethod]
+    // public static List<object> GetEUCs()  // devuelve [{EUCID,Nombre,Descripcion,Criticidad,Estado, Plan?, Doc?}]
+
+
+    // [WebMethod]
+    // public static object AddPlan(int idEUC, string responsable, string plan)  // return { ok=true, idPlan=... }
+
+    // [WebMethod]
+    // public static object AddDocumentacion(int idEUC, string nombreEUC, string proposito, string proceso, string uso, string insumos, string responsable, string docTecnica, string evControl) // { ok=true, idDoc=... }
+
+    // [WebMethod]
+   // public static object DeleteEUC(int id)
+   // {
+     //   using (var conn = new SqlConnection(connString))
+    //    using (var tx = conn.BeginTransaction())
+    //    {
+            // DELETE FROM PlanAutomatizacion WHERE EUCID=@Id
+            // DELETE FROM Documentacion WHERE EUCID=@Id
+            // DELETE FROM EUC WHERE EUCID=@Id
+    //        tx.Commit();
+     //   }
+      //  return new { ok = true };
+   // }
 
     // ============================
     // CRUD para EUC

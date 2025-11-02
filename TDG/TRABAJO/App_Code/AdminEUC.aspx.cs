@@ -4,7 +4,7 @@ using System.Web.Services;
 using System.Data.SqlClient;
 using System.Configuration;
 
-public partial class administradoreuc : System.Web.UI.Page
+public partial class Administradoreuc : System.Web.UI.Page
 {
     private static string connString = ConfigurationManager.ConnectionStrings["PoliticasEUC"].ConnectionString;
 

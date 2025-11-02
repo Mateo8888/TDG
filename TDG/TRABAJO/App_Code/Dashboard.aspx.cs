@@ -6,61 +6,86 @@ using System.Web.Services;
 
 public partial class Dashboard : System.Web.UI.Page
 {
-    [WebMethod]
-    public static List<EUC> GetDashboardData()
+    public class EUCDto
     {
-        List<EUC> listaEUC = new List<EUC>();
+        public int EUCID { get; set; }
+        public string Nombre { get; set; }
+        public string Criticidad { get; set; }   // ALTA|MEDIA|BAJA
+        public string Estado { get; set; }       // Activa|En construcción|Jubilada
+        public string Certificacion { get; set; }      // Aprobado|Rechazado|Pendiente
+        public string Documentacion { get; set; }      // Completa|Incompleta
+        public string PlanAutomatizacion { get; set; } // Completo|Incompleto
+        public string EstadoColor { get; set; }        // Verde|Rojo|Azul (para pintar)
+    }
 
-        string connectionString = ConfigurationManager.ConnectionStrings["PoliticasEUC"].ConnectionString;
+    [WebMethod]
+    public static List<EUCDto> GetDashboardData()
+    {
+        var list = new List<EUCDto>();
+        var cs = ConfigurationManager.ConnectionStrings["PoliticasEUC"].ConnectionString;
 
-        using (SqlConnection conn = new SqlConnection(connectionString))
+        using (var conn = new SqlConnection(cs))
         {
             conn.Open();
 
-            string query = @"SELECT Id, NombreEUC, Certificacion, Documentacion, PlanAutomatizacion 
-                             FROM EUC"; // Ajusta el nombre de la tabla si es distinto
+            // Arma estados del dashboard a partir de tus tablas
+            var sql = @"
+SELECT
+    e.EUCID,
+    e.Nombre,
+    e.Criticidad,
+    e.Estado,
+    ISNULL(c.EstadoCert, 'Pendiente')       AS Certificacion,
+    CASE WHEN d.IDoc IS NULL  THEN 'Incompleta' ELSE 'Completa'   END AS Documentacion,
+    CASE WHEN p.IdPlan IS NULL THEN 'Incompleto' ELSE 'Completo'  END AS PlanAutomatizacion
+FROM EUC e
+LEFT JOIN Certificacion      c ON c.EUCID = e.EUCID
+LEFT JOIN Documentacion      d ON d.EUCID = e.EUCID
+LEFT JOIN PlanAutomatizacion p ON p.EUCID = e.EUCID
+ORDER BY e.EUCID DESC;";
 
-            using (SqlCommand cmd = new SqlCommand(query, conn))
+            using (var cmd = new SqlCommand(sql, conn))
+            using (var r = cmd.ExecuteReader())
             {
-                SqlDataReader reader = cmd.ExecuteReader();
-                while (reader.Read())
+                while (r.Read())
                 {
-                    EUC euc = new EUC
-                    {
-                        Id = reader.GetInt32(0),
-                        Nombre = reader.GetString(1),
-                        Certificacion = reader.GetString(2),
-                        Documentacion = reader.GetString(3),
-                        PlanAutomatizacion = reader.GetString(4),
-                        Estado = CalcularEstado(reader.GetString(2), reader.GetString(3), reader.GetString(4))
-                    };
+                    var cert = r["Certificacion"].ToString();
+                    var doc = r["Documentacion"].ToString();
+                    var plan = r["PlanAutomatizacion"].ToString();
 
-                    listaEUC.Add(euc);
+                    list.Add(new EUCDto
+                    {
+                        EUCID = Convert.ToInt32(r["EUCID"]),
+                        Nombre = r["Nombre"].ToString(),
+                        Criticidad = r["Criticidad"].ToString(),
+                        Estado = r["Estado"].ToString(),
+                        Certificacion = cert,
+                        Documentacion = doc,
+                        PlanAutomatizacion = plan,
+                        EstadoColor = CalcularEstado(cert, doc, plan) // 'Verde'|'Rojo'|'Azul'
+                    });
                 }
             }
         }
-
-        return listaEUC;
+        return list;
     }
 
     private static string CalcularEstado(string certificacion, string documentacion, string plan)
     {
-        // Lógica para determinar el color/estado
-        if (certificacion.Equals("Aprobada", StringComparison.OrdinalIgnoreCase) &&
-            documentacion.Equals("Completa", StringComparison.OrdinalIgnoreCase) &&
-            plan.Equals("Completo", StringComparison.OrdinalIgnoreCase))
-        {
+        certificacion = (certificacion ?? "").ToLowerInvariant();
+        documentacion = (documentacion ?? "").ToLowerInvariant();
+        plan = (plan ?? "").ToLowerInvariant();
+
+        if ((certificacion.StartsWith("aprob")) &&
+            (documentacion == "completa") &&
+            (plan == "completo"))
             return "Verde";
-        }
-        else if (certificacion.Equals("Rechazada", StringComparison.OrdinalIgnoreCase) ||
-                 documentacion.Equals("Incompleta", StringComparison.OrdinalIgnoreCase) ||
-                 plan.Equals("Incompleto", StringComparison.OrdinalIgnoreCase))
-        {
+
+        if (certificacion.StartsWith("rech") ||
+            documentacion == "incompleta" ||
+            plan == "incompleto")
             return "Rojo";
-        }
-        else
-        {
-            return "Azul"; // Pendiente o incompleto parcial
-        }
+
+        return "Azul"; // pendiente / parcial
     }
 }
