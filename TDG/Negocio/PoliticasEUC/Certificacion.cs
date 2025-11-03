@@ -19,7 +19,7 @@ namespace Negocio.PoliticasEUC
         public EUC EUC { get; set; }
         public string EstadoCert { get; set; } = "Pendiente";
         public DateTime FechaControl { get; set; }
-        public string Observacion { get; set; }     
+        public string Observacion { get; set; }
         public Certificacion() { }
 
         // Constructor principal
@@ -140,6 +140,7 @@ namespace Negocio.PoliticasEUC
             }
         }
     }
+}
 
     
  
