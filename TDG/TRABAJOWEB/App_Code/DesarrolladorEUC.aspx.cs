@@ -30,18 +30,18 @@ public partial class Desarrollador : System.Web.UI.Page
     // public static object AddDocumentacion(int idEUC, string nombreEUC, string proposito, string proceso, string uso, string insumos, string responsable, string docTecnica, string evControl) // { ok=true, idDoc=... }
 
     // [WebMethod]
-   // public static object DeleteEUC(int id)
-   // {
-     //   using (var conn = new SqlConnection(connString))
+    // public static object DeleteEUC(int id)
+    // {
+    //   using (var conn = new SqlConnection(connString))
     //    using (var tx = conn.BeginTransaction())
     //    {
-            // DELETE FROM PlanAutomatizacion WHERE EUCID=@Id
-            // DELETE FROM Documentacion WHERE EUCID=@Id
-            // DELETE FROM EUC WHERE EUCID=@Id
+    // DELETE FROM PlanAutomatizacion WHERE EUCID=@Id
+    // DELETE FROM Documentacion WHERE EUCID=@Id
+    // DELETE FROM EUC WHERE EUCID=@Id
     //        tx.Commit();
-     //   }
-      //  return new { ok = true };
-   // }
+    //   }
+    //  return new { ok = true };
+    // }
 
     // ============================
     // CRUD para EUC

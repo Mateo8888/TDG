@@ -7,7 +7,7 @@
 // </generado automáticamente>
 //------------------------------------------------------------------------------
 
-namespace TRABAJO
+namespace TRABAJOWEB
 {
 
 
