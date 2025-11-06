@@ -3,6 +3,7 @@ using Microsoft.Ajax.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Data;
 using System.Data.SqlClient;
 using System.Web.Services;
 using System.Web.UI;
@@ -205,6 +206,27 @@ namespace TRABAJO
             return "Documentación eliminada correctamente";
         }
 
+        protected global::System.Web.UI.WebControls.GridView gvEUC;
+        private void BindEUCs()
+        {
+            // Usa la misma cadena que ya usas al insertar
+            string connectionString = "Data Source=localhost;Initial Catalog=PoliticasEUC;Integrated Security=True";
+
+            using (var conn = new SqlConnection(connectionString))
+            using (var cmd = new SqlCommand(
+                @"SELECT EUCID, Nombre, Descripcion, Criticidad, Estado 
+          FROM dbo.EUC
+          ORDER BY EUCID DESC;", conn))
+            using (var da = new SqlDataAdapter(cmd))
+            {
+                var dt = new DataTable();
+                conn.Open();
+                da.Fill(dt);
+                gvEUC.DataSource = dt;
+                gvEUC.DataBind();
+            }
+        }
+
         protected global::System.Web.UI.WebControls.TextBox txtNombre;
         protected global::System.Web.UI.WebControls.TextBox txtDescripcion;
         protected global::System.Web.UI.WebControls.DropDownList ddlCriticidad;
@@ -225,8 +247,8 @@ namespace TRABAJO
                 return;
             }
 
-            // Conexión a SQL Server
-            string connectionString = "Data Source=localhost;Initial Catalog=PoliticasEUC;Integrated Security=True";
+        // Conexión a SQL Server
+        string connectionString = "Data Source=localhost;Initial Catalog=PoliticasEUC;Integrated Security=True";
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
                 string query = @"INSERT INTO EUC (Nombre, Descripcion, Criticidad, Estado)

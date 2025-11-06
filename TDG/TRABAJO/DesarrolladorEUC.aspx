@@ -99,6 +99,18 @@
             </div>
         </div>
     </div>
+
+    <asp:GridView ID="gvEUC" runat="server" AutoGenerateColumns="false"
+              CssClass="table table-striped table-bordered">
+    <Columns>
+        <asp:BoundField DataField="EUCID" HeaderText="ID" />
+        <asp:BoundField DataField="Nombre" HeaderText="Nombre" />
+        <asp:BoundField DataField="Descripcion" HeaderText="Descripción" />
+        <asp:BoundField DataField="Criticidad" HeaderText="Criticidad" />
+        <asp:BoundField DataField="Estado" HeaderText="Estado" />
+    </Columns>
+</asp:GridView>
+
     <!-- Mensajes -->
     <div class="mb-3">
         <span id="lblMsg" class="text-success fw-semibold me-3"></span>
