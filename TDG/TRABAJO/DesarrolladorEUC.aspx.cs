@@ -7,203 +7,344 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Web.Services;
 using System.Web.UI;
+using System.Web.UI.WebControls;
 
 namespace TRABAJO
 {
     public partial class DesarrolladorEUC : System.Web.UI.Page
     {
-       
         // Obtener cadena de conexión desde Web.config
         private static string connString = ConfigurationManager.ConnectionStrings["PoliticasEUC"].ConnectionString;
 
-
-
-        // [WebMethod]
-        // public static object CreateEUC(string nombre, string descripcion, string criticidad, string estado) { /* return { ok=true, id=... } */ }
-
-        // [WebMethod]
-        // public static object UpdateEUC(int id, string nombre, string descripcion, string criticidad, string estado) { /* ok */ }
-
-
-        // [WebMethod]
-        // public static List<object> GetEUCs()  // devuelve [{EUCID,Nombre,Descripcion,Criticidad,Estado, Plan?, Doc?}]
-
-
-        // [WebMethod]
-        // public static object AddPlan(int idEUC, string responsable, string plan)  // return { ok=true, idPlan=... }
-
-        // [WebMethod]
-        // public static object AddDocumentacion(int idEUC, string nombreEUC, string proposito, string proceso, string uso, string insumos, string responsable, string docTecnica, string evControl) // { ok=true, idDoc=... }
-
-        // [WebMethod]
-        // public static object DeleteEUC(int id)
-        // {
-        //   using (var conn = new SqlConnection(connString))
-        //    using (var tx = conn.BeginTransaction())
-        //    {
-        // DELETE FROM PlanAutomatizacion WHERE EUCID=@Id
-        // DELETE FROM Documentacion WHERE EUCID=@Id
-        // DELETE FROM EUC WHERE EUCID=@Id
-        //        tx.Commit();
-        //   }
-        //  return new { ok = true };
-        // }
-
-        [WebMethod]
-        public static string CreateEUC(string nombre, string descripcion, string criticidad)
+        private DataTable ObtenerEUCDesdeBD()
         {
-            using (SqlConnection conn = new SqlConnection(connString))
+            string connectionString = "Data Source=localhost;Initial Catalog=PoliticasEUC;Integrated Security=True";
+            using (var conn = new SqlConnection(connectionString))
+            using (var cmd = new SqlCommand(@"SELECT EUCID, Nombre, Descripcion, Criticidad, Estado FROM dbo.EUC ORDER BY EUCID DESC;", conn))
+            using (var da = new SqlDataAdapter(cmd))
             {
-                string query = "INSERT INTO EUC (Nombre, Descripcion, Criticidad, Estado) VALUES (@Nombre, @Descripcion, @Criticidad, 'Incompleto')";
+                var dt = new DataTable();
+                conn.Open();
+                da.Fill(dt);
+                return dt;
+            }
+        }
+
+        protected void Page_Load(object sender, EventArgs e)
+        {
+                CargarEUC();   
+        }
+
+        protected global::System.Web.UI.WebControls.PlaceHolder contenedorTarjetas;
+        private void CargarEUC()
+        {
+            var dt = ObtenerEUCDesdeBD();
+            contenedorTarjetas.Controls.Clear();
+
+            foreach (DataRow row in dt.Rows)
+            {
+                string id = row["EUCID"].ToString();
+                string nombre = row["Nombre"].ToString();
+                string descripcion = row["Descripcion"].ToString();
+                string criticidad = row["Criticidad"].ToString();
+                string estado = row["Estado"].ToString();
+
+                Panel card = new Panel { CssClass = "col-md-4 mb-3" };
+                Panel innerCard = new Panel { CssClass = "card shadow-sm" };
+                Panel body = new Panel { CssClass = "card-body" };
+
+                body.Controls.Add(new Literal { Text = $"<h5 class='card-title'>{nombre}</h5><p>{descripcion}</p>" });
+                body.Controls.Add(new Literal { Text = $"<span class='badge bg-primary'>{criticidad}</span> <span class='badge bg-secondary'>{estado}</span><hr>" });
+
+                // Botón Editar
+                Button btnEditar = new Button
+                {
+                    Text = "Editar",
+                    CssClass = "btn btn-sm btn-warning me-2",
+                    CommandArgument = id
+                };
+                btnEditar.Click += BtnEditar_Click;
+
+                // Botón Eliminar
+                Button btnEliminar = new Button
+                {
+                    Text = "Eliminar",
+                    CssClass = "btn btn-sm btn-danger me-2",
+                    CommandArgument = id
+                };
+                btnEliminar.Click += BtnEliminar_Click;
+
+                // Botón Plan
+                Button btnPlan = new Button
+                {
+                    Text = "Plan",
+                    CssClass = "btn btn-sm btn-info me-2",
+                    CommandArgument = id
+                };
+                btnPlan.Click += BtnPlan_Click;
+
+                // Botón Documentación
+                Button btnDoc = new Button
+                {
+                    Text = "Documentación",
+                    CssClass = "btn btn-sm btn-success",
+                    CommandArgument = id
+                };
+                btnDoc.Click += BtnDoc_Click;
+
+                // Agregar botones
+                body.Controls.Add(btnEditar);
+                body.Controls.Add(btnEliminar);
+                body.Controls.Add(new Literal { Text = "<br/><br/>" });
+                body.Controls.Add(btnPlan);
+                body.Controls.Add(btnDoc);
+
+                innerCard.Controls.Add(body);
+                card.Controls.Add(innerCard);
+                contenedorTarjetas.Controls.Add(card);
+            }
+        }
+
+        protected void BtnEditar_Click(object sender, EventArgs e)
+        {
+            Button btn = (Button)sender;
+            string id = btn.CommandArgument;
+
+            var dt = ObtenerEUCDesdeBD();
+            DataRow[] rows = dt.Select($"EUCID = {id}");
+            if (rows.Length > 0)
+            {
+                hfEUCID.Value = id; // Guardamos el ID
+                txtNombre.Text = rows[0]["Nombre"].ToString();
+                txtDescripcion.Text = rows[0]["Descripcion"].ToString();
+                ddlCriticidad.SelectedValue = rows[0]["Criticidad"].ToString();
+                ddlEstado.SelectedValue = rows[0]["Estado"].ToString();
+            }
+
+            ScriptManager.RegisterStartupScript(this, GetType(), "ShowModal", "$('#mdlEucNuevo').modal('show');", true);
+        }
+
+        protected void BtnEliminar_Click(object sender, EventArgs e)
+        {
+            Button btn = (Button)sender;
+            string id = btn.CommandArgument;
+
+            string connectionString = "Data Source=localhost;Initial Catalog=PoliticasEUC;Integrated Security=True";
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                string query = "DELETE FROM EUC WHERE EUCID = @EUCID";
                 SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@Nombre", nombre);
-                cmd.Parameters.AddWithValue("@Descripcion", descripcion);
-                cmd.Parameters.AddWithValue("@Criticidad", criticidad);
+                cmd.Parameters.AddWithValue("@EUCID", id);
                 conn.Open();
                 cmd.ExecuteNonQuery();
             }
-            return "EUC creada correctamente";
+
+            // Recargar la vista
+            Response.Redirect("DesarrolladorEUC.aspx");
         }
 
-        [WebMethod]
-        public static string UpdateEUC(int id, string nombre, string descripcion, string criticidad)
+        private DataRow ObtenerPlanPorEUC(string eucId)
         {
+            string query = "SELECT * FROM PlanAutomatizacion WHERE EUCID = @EUCID";
             using (SqlConnection conn = new SqlConnection(connString))
+            using (SqlCommand cmd = new SqlCommand(query, conn))
             {
-                string query = "UPDATE EUC SET Nombre=@Nombre, Descripcion=@Descripcion, Criticidad=@Criticidad WHERE EUCID=@Id";
-                SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@Id", id);
-                cmd.Parameters.AddWithValue("@Nombre", nombre);
-                cmd.Parameters.AddWithValue("@Descripcion", descripcion);
-                cmd.Parameters.AddWithValue("@Criticidad", criticidad);
-                conn.Open();
-                cmd.ExecuteNonQuery();
+                cmd.Parameters.AddWithValue("@EUCID", eucId);
+                using (SqlDataAdapter da = new SqlDataAdapter(cmd))
+                {
+                    DataTable dt = new DataTable();
+                    conn.Open();
+                    da.Fill(dt);
+                    return dt.Rows.Count > 0 ? dt.Rows[0] : null;
+                }
             }
-            return "EUC actualizada correctamente";
         }
 
-        [WebMethod]
-        public static string DeleteEUC(int id)
+        private bool ExistePlan(string eucId)
         {
+            string query = "SELECT COUNT(*) FROM PlanAutomatizacion WHERE EUCID = @EUCID";
             using (SqlConnection conn = new SqlConnection(connString))
+            using (SqlCommand cmd = new SqlCommand(query, conn))
             {
-                string query = "DELETE FROM EUC WHERE EUCID=@Id";
-                SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@Id", id);
+                cmd.Parameters.AddWithValue("@EUCID", eucId);
                 conn.Open();
-                cmd.ExecuteNonQuery();
+                int count = (int)cmd.ExecuteScalar();
+                return count > 0;
             }
-            return "EUC eliminada correctamente";
         }
 
-        [WebMethod]
-        public static string AddPlan(int idEUC, string responsable, string plan)
+        private DataRow ObtenerDocumentacionPorEUC(string eucId)
         {
+            string query = "SELECT * FROM Documentacion WHERE EUCID = @EUCID";
+            using (SqlConnection conn = new SqlConnection(connString))
+            using (SqlCommand cmd = new SqlCommand(query, conn))
+            {
+                cmd.Parameters.AddWithValue("@EUCID", eucId);
+                using (SqlDataAdapter da = new SqlDataAdapter(cmd))
+                {
+                    DataTable dt = new DataTable();
+                    conn.Open();
+                    da.Fill(dt);
+                    return dt.Rows.Count > 0 ? dt.Rows[0] : null;
+                }
+            }
+        }
+
+        private bool ExisteDocumentacion(string eucId)
+        {
+            string query = "SELECT COUNT(*) FROM Documentacion WHERE EUCID = @EUCID";
+            using (SqlConnection conn = new SqlConnection(connString))
+            using (SqlCommand cmd = new SqlCommand(query, conn))
+            {
+                cmd.Parameters.AddWithValue("@EUCID", eucId);
+                conn.Open();
+                int count = (int)cmd.ExecuteScalar();
+                return count > 0;
+            }
+        }
+        protected global::System.Web.UI.WebControls.HiddenField hfPlanEUCID;
+        protected global::System.Web.UI.WebControls.TextBox txtPlanResponsable;
+        protected global::System.Web.UI.WebControls.TextBox txtPlan;
+        protected global::System.Web.UI.WebControls.Button btnGuardarPlan;
+        protected void BtnPlan_Click(object sender, EventArgs e)
+        {
+            Button btn = (Button)sender;
+            string eucId = btn.CommandArgument;
+
+            hfPlanEUCID.Value = eucId; // HiddenField en el modal Plan
+
+            // Consultar si existe un plan para esta EUC
+            var plan = ObtenerPlanPorEUC(eucId);
+            if (plan != null)
+            {
+
+                txtPlanResponsable.Text = plan["Responsable"].ToString();
+                txtPlan.Text = plan["Plan"].ToString();
+
+            }
+            else
+            {
+                txtPlanResponsable.Text = "";
+                txtPlan.Text = "";
+            }
+
+            ScriptManager.RegisterStartupScript(this, GetType(), "ShowPlanModal", "$('#mdlPlan').modal('show');", true);
+        }
+
+        protected global::System.Web.UI.WebControls.HiddenField hfDocEUCID;
+        protected global::System.Web.UI.WebControls.TextBox txtDocNombreEUC;
+        protected global::System.Web.UI.WebControls.TextBox txtDocProposito;
+        protected global::System.Web.UI.WebControls.TextBox txtDocProceso;
+        protected global::System.Web.UI.WebControls.TextBox txtDocUso;
+        protected global::System.Web.UI.WebControls.TextBox txtDocInsumos;
+        protected global::System.Web.UI.WebControls.TextBox txtDocResponsable;
+        protected global::System.Web.UI.WebControls.TextBox txtDocTecnica;
+        protected global::System.Web.UI.WebControls.TextBox txtDocEvControl;
+        protected global::System.Web.UI.WebControls.Button btnGuardarDoc;
+        protected void BtnDoc_Click(object sender, EventArgs e)
+        {
+            Button btn = (Button)sender;
+            string eucId = btn.CommandArgument;
+
+            hfDocEUCID.Value = eucId;
+
+            var doc = ObtenerDocumentacionPorEUC(eucId);
+            if (doc != null)
+            {
+                txtDocNombreEUC.Text = doc["NombreEUC"].ToString();
+                txtDocProposito.Text = doc["Proposito"].ToString();
+                txtDocProceso.Text = doc["Proceso"].ToString();
+                txtDocUso.Text = doc["Uso"].ToString();
+                txtDocInsumos.Text = doc["Insumos"].ToString();
+                txtDocResponsable.Text = doc["Responsable"].ToString();
+                txtDocTecnica.Text = doc["DocTecnica"].ToString();
+                txtDocEvControl.Text = doc["EvControl"].ToString();
+            }
+            else
+            {
+                txtDocNombreEUC.Text = "";
+                txtDocProposito.Text = "";
+                txtDocProceso.Text = "";
+                txtDocUso.Text = "";
+                txtDocInsumos.Text = "";
+                txtDocResponsable.Text = "";
+                txtDocTecnica.Text = "";
+                txtDocEvControl.Text = "";
+            }
+
+            ScriptManager.RegisterStartupScript(this, GetType(), "ShowDocModal", "$('#mdlDoc').modal('show');", true);
+        }
+
+        protected void btnGuardarPlan_Click(object sender, EventArgs e)
+        {
+            string eucId = hfPlanEUCID.Value;
+            string responsable = txtPlanResponsable.Text.Trim();
+            string plan = txtPlan.Text.Trim();
+
             using (SqlConnection conn = new SqlConnection(connString))
             {
-                string query = "INSERT INTO PlanAutomatizacion (EUCID, Responsable, [Plan]) VALUES (@EUCID, @Responsable, @Plan)";
-                SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@EUCID", idEUC);
+                SqlCommand cmd;
+                if (ExistePlan(eucId))
+                {
+                    cmd = new SqlCommand("UPDATE PlanAutomatizacion SET Responsable=@Responsable, [plan]=@plan WHERE EUCID=@EUCID", conn);
+                }
+                else
+                {
+                    cmd = new SqlCommand("INSERT INTO PlanAutomatizacion (EUCID, Responsable, [plan]) VALUES (@EUCID, @Responsable, @plan)", conn);
+                }
+                cmd.Parameters.AddWithValue("@EUCID", eucId);
                 cmd.Parameters.AddWithValue("@Responsable", responsable);
-                cmd.Parameters.AddWithValue("@Plan", plan);
-                conn.Open();
-                cmd.ExecuteNonQuery();
+                cmd.Parameters.AddWithValue("@plan", plan);
             }
-            return "Plan agregado correctamente";
+
+            Response.Redirect("DesarrolladorEUC.aspx");
         }
 
-        [WebMethod]
-        public static string UpdatePlan(int idPlan, string responsable, string plan)
+        protected void btnGuardarDoc_Click(object sender, EventArgs e)
         {
+            string eucId = hfDocEUCID.Value;
+            string nombreEUC = txtDocNombreEUC.Text.Trim();
+            string proposito = txtDocProposito.Text.Trim();
+            string proceso = txtDocProceso.Text.Trim();
+            string uso = txtDocUso.Text.Trim();
+            string insumos = txtDocInsumos.Text.Trim();
+            string responsable = txtDocResponsable.Text.Trim();
+            string tecnica = txtDocTecnica.Text.Trim();
+            string evidencia = txtDocEvControl.Text.Trim();
+
             using (SqlConnection conn = new SqlConnection(connString))
             {
-                string query = "UPDATE PlanAutomatizacion SET Responsable=@Responsable, [Plan]=@Plan WHERE IdPlan=@IdPlan";
-                SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@IdPlan", idPlan);
-                cmd.Parameters.AddWithValue("@Responsable", responsable);
-                cmd.Parameters.AddWithValue("@Plan", plan);
-                conn.Open();
-                cmd.ExecuteNonQuery();
-            }
-            return "Plan actualizado correctamente";
-        }
+                SqlCommand cmd;
+                if (ExisteDocumentacion(eucId))
+                {
+                    cmd = new SqlCommand(@"
+                UPDATE Documentacion 
+                SET NombreEUC=@NombreEUC, Proposito=@Proposito, Proceso=@Proceso, Uso=@Uso, 
+                    Insumos=@Insumos, Responsable=@Responsable, DocTecnica=@Tecnica, EvControl=@Evidencia 
+                WHERE EUCID=@EUCID", conn);
+                }
+                else
+                {
+                    cmd = new SqlCommand(@"
+                INSERT INTO Documentacion (EUCID, NombreEUC, Proposito, Proceso, Uso, Insumos, Responsable, DocTecnica, EvControl) 
+                VALUES (@EUCID, @NombreEUC, @Proposito, @Proceso, @Uso, @Insumos, @Responsable, @Tecnica, @Evidencia)", conn);
+                }
 
-        [WebMethod]
-        public static string DeletePlan(int idPlan)
-        {
-            using (SqlConnection conn = new SqlConnection(connString))
-            {
-                string query = "DELETE FROM PlanAutomatizacion WHERE IdPlan=@IdPlan";
-                SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@IdPlan", idPlan);
-                conn.Open();
-                cmd.ExecuteNonQuery();
-            }
-            return "Plan eliminado correctamente";
-        }
-
-        // ============================
-        // CRUD para Documentación
-        // ============================
-
-        [WebMethod]
-        public static string AddDocumentacion(int idEUC, string nombreEUC, string proposito, string proceso, string uso, string insumos, string responsable, string docTecnica, string evControl)
-        {
-            using (SqlConnection conn = new SqlConnection(connString))
-            {
-                string query = @"INSERT INTO Documentacion (EUCID, NombreEUC, Proposito, Proceso, Uso, Insumos, Responsable, DocTecnica, EvControl)
-                             VALUES (@EUCID, @NombreEUC, @Proposito, @Proceso, @Uso, @Insumos, @Responsable, @DocTecnica, @EvControl)";
-                SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@EUCID", idEUC);
+                cmd.Parameters.AddWithValue("@EUCID", eucId);
                 cmd.Parameters.AddWithValue("@NombreEUC", nombreEUC);
                 cmd.Parameters.AddWithValue("@Proposito", proposito);
                 cmd.Parameters.AddWithValue("@Proceso", proceso);
                 cmd.Parameters.AddWithValue("@Uso", uso);
                 cmd.Parameters.AddWithValue("@Insumos", insumos);
                 cmd.Parameters.AddWithValue("@Responsable", responsable);
-                cmd.Parameters.AddWithValue("@DocTecnica", docTecnica);
-                cmd.Parameters.AddWithValue("@EvControl", evControl);
-                conn.Open();
-                cmd.ExecuteNonQuery();
-            }
-            return "Documentación agregada correctamente";
-        }
+                cmd.Parameters.AddWithValue("@Tecnica", tecnica);
+                cmd.Parameters.AddWithValue("@Evidencia", evidencia);
 
-        [WebMethod]
-        public static string UpdateDocumentacion(int idDoc, string nombreEUC, string proposito, string proceso, string uso, string insumos, string responsable, string docTecnica, string evControl)
-        {
-            using (SqlConnection conn = new SqlConnection(connString))
-            {
-                string query = @"UPDATE Documentacion SET NombreEUC=@NombreEUC, Proposito=@Proposito, Proceso=@Proceso, Uso=@Uso, Insumos=@Insumos, Responsable=@Responsable, DocTecnica=@DocTecnica, EvControl=@EvControl
-                             WHERE IDoc=@IDoc";
-                SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@IDoc", idDoc);
-                cmd.Parameters.AddWithValue("@NombreEUC", nombreEUC);
-                cmd.Parameters.AddWithValue("@Proposito", proposito);
-                cmd.Parameters.AddWithValue("@Proceso", proceso);
-                cmd.Parameters.AddWithValue("@Uso", uso);
-                cmd.Parameters.AddWithValue("@Insumos", insumos);
-                cmd.Parameters.AddWithValue("@Responsable", responsable);
-                cmd.Parameters.AddWithValue("@DocTecnica", docTecnica);
-                cmd.Parameters.AddWithValue("@EvControl", evControl);
                 conn.Open();
                 cmd.ExecuteNonQuery();
             }
-            return "Documentación actualizada correctamente";
-        }
 
-        [WebMethod]
-        public static string DeleteDocumentacion(int idDoc)
-        {
-            using (SqlConnection conn = new SqlConnection(connString))
-            {
-                string query = "DELETE FROM Documentacion WHERE IDoc=@IDoc";
-                SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@IDoc", idDoc);
-                conn.Open();
-                cmd.ExecuteNonQuery();
-            }
-            return "Documentación eliminada correctamente";
+            Response.Redirect("DesarrolladorEUC.aspx");
         }
 
         protected global::System.Web.UI.WebControls.GridView gvEUC;
@@ -232,6 +373,7 @@ namespace TRABAJO
         protected global::System.Web.UI.WebControls.DropDownList ddlCriticidad;
         protected global::System.Web.UI.WebControls.DropDownList ddlEstado;
         protected global::System.Web.UI.WebControls.Button btnGuardarEUC;
+        protected global::System.Web.UI.WebControls.HiddenField hfEUCID;
 
         protected void btnGuardarEUC_Click(object sender, EventArgs e)
         {
@@ -239,21 +381,37 @@ namespace TRABAJO
             string descripcion = txtDescripcion.Text.Trim();
             string criticidad = ddlCriticidad.SelectedValue;
             string estado = ddlEstado.SelectedValue;
+            string id = hfEUCID.Value; // ID del EUC si estamos editando
 
             // Validación básica
             if (string.IsNullOrEmpty(nombre) || string.IsNullOrEmpty(descripcion))
             {
-                // Mostrar mensaje de error (puedes usar un Label o Script)
                 return;
             }
 
-        // Conexión a SQL Server
-        string connectionString = "Data Source=localhost;Initial Catalog=PoliticasEUC;Integrated Security=True";
+            string connectionString = "Data Source=localhost;Initial Catalog=PoliticasEUC;Integrated Security=True";
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
-                string query = @"INSERT INTO EUC (Nombre, Descripcion, Criticidad, Estado)
-                         VALUES (@Nombre, @Descripcion, @Criticidad, @Estado)";
-                SqlCommand cmd = new SqlCommand(query, conn);
+                SqlCommand cmd;
+
+                if (!string.IsNullOrEmpty(id))
+                {
+                    // ✅ Modo edición → UPDATE
+                    string query = @"UPDATE EUC 
+                             SET Nombre=@Nombre, Descripcion=@Descripcion, Criticidad=@Criticidad, Estado=@Estado 
+                             WHERE EUCID=@EUCID";
+                    cmd = new SqlCommand(query, conn);
+                    cmd.Parameters.AddWithValue("@EUCID", id);
+                }
+                else
+                {
+                    // ✅ Modo creación → INSERT
+                    string query = @"INSERT INTO EUC (Nombre, Descripcion, Criticidad, Estado)
+                             VALUES (@Nombre, @Descripcion, @Criticidad, @Estado)";
+                    cmd = new SqlCommand(query, conn);
+                }
+
+                // Parámetros comunes
                 cmd.Parameters.AddWithValue("@Nombre", nombre);
                 cmd.Parameters.AddWithValue("@Descripcion", descripcion);
                 cmd.Parameters.AddWithValue("@Criticidad", criticidad);
@@ -263,8 +421,11 @@ namespace TRABAJO
                 cmd.ExecuteNonQuery();
             }
 
-            // Cerrar modal y refrescar la página
-            ScriptManager.RegisterStartupScript(this, GetType(), "CerrarModal", "$('#mdlEucNuevo').modal('hide');", true);
+            // ✅ Limpiar el HiddenField para evitar que quede en modo edición
+            hfEUCID.Value = "";
+
+            // ✅ Recargar la página para mostrar cambios
+            Response.Redirect("DesarrolladorEUC.aspx");
         }
     }
 
