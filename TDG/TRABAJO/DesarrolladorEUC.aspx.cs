@@ -248,31 +248,49 @@ namespace TRABAJO
 
             hfDocEUCID.Value = eucId;
 
+            // Limpia siempre
+            txtDocNombreEUC.Text = "";
+            txtDocProposito.Text = "";
+            txtDocProceso.Text = "";
+            txtDocUso.Text = "";
+            txtDocInsumos.Text = "";
+            txtDocResponsable.Text = "";
+            txtDocTecnica.Text = "";
+            txtDocEvControl.Text = "";
+
+            // Carga si existe
             var doc = ObtenerDocumentacionPorEUC(eucId);
             if (doc != null)
             {
-                txtDocNombreEUC.Text = doc["NombreEUC"].ToString();
-                txtDocProposito.Text = doc["Proposito"].ToString();
-                txtDocProceso.Text = doc["Proceso"].ToString();
-                txtDocUso.Text = doc["Uso"].ToString();
-                txtDocInsumos.Text = doc["Insumos"].ToString();
-                txtDocResponsable.Text = doc["Responsable"].ToString();
-                txtDocTecnica.Text = doc["DocTecnica"].ToString();
-                txtDocEvControl.Text = doc["EvControl"].ToString();
-            }
-            else
-            {
-                txtDocNombreEUC.Text = "";
-                txtDocProposito.Text = "";
-                txtDocProceso.Text = "";
-                txtDocUso.Text = "";
-                txtDocInsumos.Text = "";
-                txtDocResponsable.Text = "";
-                txtDocTecnica.Text = "";
-                txtDocEvControl.Text = "";
+                txtDocNombreEUC.Text = doc["NombreEUC"]?.ToString();
+                txtDocProposito.Text = doc["Proposito"]?.ToString();
+                txtDocProceso.Text = doc["Proceso"]?.ToString();
+                txtDocUso.Text = doc["Uso"]?.ToString();
+                txtDocInsumos.Text = doc["Insumos"]?.ToString();
+                txtDocResponsable.Text = doc["Responsable"]?.ToString();
+                txtDocTecnica.Text = doc["DocTecnica"]?.ToString();
+                txtDocEvControl.Text = doc["EvControl"]?.ToString();
             }
 
-            ScriptManager.RegisterStartupScript(this, GetType(), "ShowDocModal", "$('#mdlDoc').modal('show');", true);
+            ScriptManager.RegisterStartupScript(
+     this,
+     GetType(),
+     Guid.NewGuid().ToString(), // clave única para asegurar ejecución
+     @"
+    (function() {
+        var el = document.getElementById('mdlDoc');
+        if (!el) return;
+        if (window.bootstrap && bootstrap.Modal) {
+            var m = bootstrap.Modal.getOrCreateInstance(el);
+            m.show();
+        } else if (window.jQuery && $('#mdlDoc').modal) {
+            $('#mdlDoc').modal('show');
+        } else {
+            console.warn('No se encontró Bootstrap para abrir el modal.');
+        }
+    })();",
+     true
+ );
         }
 
         protected void btnGuardarPlan_Click(object sender, EventArgs e)

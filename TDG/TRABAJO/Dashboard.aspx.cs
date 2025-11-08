@@ -107,34 +107,53 @@ namespace TRABAJO
         protected System.Web.UI.HtmlControls.HtmlGenericControl Div3;  // Certificación
         private void MostrarDetalle(int eucid)
         {
-            string connStr = ConfigurationManager.ConnectionStrings["PoliticasEUC"].ConnectionString;
-
-            using (SqlConnection conn = new SqlConnection(connStr))
+            using (SqlConnection conn = new SqlConnection(connString))
+            using (SqlCommand cmd = new SqlCommand(@"
+        SELECT e.Nombre, e.Criticidad, e.Estado,
+               p.[Plan],
+               d.Proposito, d.Proceso, d.Uso, d.Insumos, d.DocTecnica,
+               ISNULL(c.EstadoCert, 'Pendiente') AS EstadoCert
+        FROM EUC e
+        LEFT JOIN PlanAutomatizacion p ON e.EUCID = p.EUCID
+        LEFT JOIN Documentacion d ON e.EUCID = d.EUCID
+        LEFT JOIN Certificacion c ON e.EUCID = c.EUCID
+        WHERE e.EUCID = @id;", conn))
             {
-                string query = @"SELECT e.Nombre, e.Criticidad, e.Estado,
-                                p.[Plan], d.Proposito, d.Proceso, d.Uso, d.Insumos, d.DocTecnica,
-                                ISNULL(c.EstadoCert, 'Pendiente') AS EstadoCert
-                         FROM EUC e
-                         LEFT JOIN PlanAutomatizacion p ON e.EUCID = p.EUCID
-                         LEFT JOIN Documentacion d ON e.EUCID = d.EUCID
-                         LEFT JOIN Certificacion c ON e.EUCID = c.EUCID
-                         WHERE e.EUCID = @id";
-
-                SqlCommand cmd = new SqlCommand(query, conn);
                 cmd.Parameters.AddWithValue("@id", eucid);
-
                 conn.Open();
-                SqlDataReader dr = cmd.ExecuteReader();
-                if (dr.Read())
+
+                using (var dr = cmd.ExecuteReader())
                 {
-                    var content = Master.FindControl("MainContent");
-                    ((HtmlGenericControl)content.FindControl("Span1")).InnerText = dr["Nombre"].ToString();
-                    ((HtmlGenericControl)content.FindControl("Span2")).InnerText = dr["Criticidad"].ToString();
-                    ((HtmlGenericControl)content.FindControl("Span3")).InnerText = dr["Estado"].ToString();
-                    ((HtmlGenericControl)content.FindControl("Div1")).InnerText = string.IsNullOrEmpty(dr["Plan"].ToString()) ? "N/D" : dr["Plan"].ToString();
-                    ((HtmlGenericControl)content.FindControl("Div2")).InnerText = string.IsNullOrEmpty(dr["Proposito"].ToString()) ? "N/D" :
-                        $"Propósito: {dr["Proposito"]}\nProceso: {dr["Proceso"]}\nUso: {dr["Uso"]}\nInsumos: {dr["Insumos"]}\nDoc Técnica: {dr["DocTecnica"]}";
-                    ((HtmlGenericControl)content.FindControl("Div3")).InnerText = dr["EstadoCert"].ToString();
+                    if (dr.Read())
+                    {
+                        detNombre.InnerText = dr["Nombre"]?.ToString();
+
+                        detCrit.InnerText = dr["Criticidad"]?.ToString();
+                        detEstado.InnerText = dr["Estado"]?.ToString();
+
+                        // Plan
+                        string plan = dr["Plan"]?.ToString();
+                        detPlan.InnerText = string.IsNullOrWhiteSpace(plan) ? "N/D" : plan;
+
+                        // Documentación (con saltos de línea)
+                        string proposito = dr["Proposito"]?.ToString();
+                        if (string.IsNullOrWhiteSpace(proposito))
+                        {
+                            detDoc.InnerText = "N/D";
+                        }
+                        else
+                        {
+                            detDoc.InnerText =
+                                $"Propósito: {dr["Proposito"]}\n" +
+                                $"Proceso: {dr["Proceso"]}\n" +
+                                $"Uso: {dr["Uso"]}\n" +
+                                $"Insumos: {dr["Insumos"]}\n" +
+                                $"Doc Técnica: {dr["DocTecnica"]}";
+                        }
+
+                        // Certificación
+                        detCert.InnerText = dr["EstadoCert"]?.ToString();
+                    }
                 }
             }
         }

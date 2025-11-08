@@ -153,21 +153,34 @@ namespace TRABAJO
         }
         private void CertificarEUC(string eucId, bool aprobado, string comentario)
         {
-            string query = @"UPDATE Certificacion 
-                     SET EstadoCert = @EstadoCert, Observacion = @Observacion, FechaControl = GETDATE() 
-                     WHERE EUCID = @EUCID";
+            const string updateSql = @"
+        UPDATE Certificacion
+        SET EstadoCert = @EstadoCert,
+            Observacion = @Observacion,
+            FechaControl = GETDATE()
+        WHERE EUCID = @EUCID";
+
+            const string insertSql = @"
+        INSERT INTO Certificacion (EUCID, EstadoCert, FechaControl, Observacion)
+        VALUES (@EUCID, @EstadoCert, GETDATE(), @Observacion)";
 
             using (SqlConnection conn = new SqlConnection(connString))
-            using (SqlCommand cmd = new SqlCommand(query, conn))
+            using (SqlCommand cmd = new SqlCommand(updateSql, conn))
             {
                 cmd.Parameters.AddWithValue("@EstadoCert", aprobado ? "Aprobada" : "Rechazada");
                 cmd.Parameters.AddWithValue("@Observacion", comentario);
                 cmd.Parameters.AddWithValue("@EUCID", eucId);
 
                 conn.Open();
-                cmd.ExecuteNonQuery();
-            }
+                int rows = cmd.ExecuteNonQuery();
 
+                // Si no había registro, inserta
+                if (rows == 0)
+                {
+                    cmd.CommandText = insertSql;
+                    cmd.ExecuteNonQuery();
+                }
+            }
         }
 
         public string GetCertificacionClass(string estadoCert)
