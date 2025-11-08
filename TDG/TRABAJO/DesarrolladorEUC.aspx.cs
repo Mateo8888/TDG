@@ -286,15 +286,19 @@ namespace TRABAJO
                 SqlCommand cmd;
                 if (ExistePlan(eucId))
                 {
-                    cmd = new SqlCommand("UPDATE PlanAutomatizacion SET Responsable=@Responsable, [plan]=@plan WHERE EUCID=@EUCID", conn);
+                    cmd = new SqlCommand("UPDATE PlanAutomatizacion SET Responsable=@Responsable, [Plan]=@Plan WHERE EUCID=@EUCID", conn);
                 }
                 else
                 {
-                    cmd = new SqlCommand("INSERT INTO PlanAutomatizacion (EUCID, Responsable, [plan]) VALUES (@EUCID, @Responsable, @plan)", conn);
+                    cmd = new SqlCommand("INSERT INTO PlanAutomatizacion (EUCID, Responsable, [Plan]) VALUES (@EUCID, @Responsable, @Plan)", conn);
                 }
+
                 cmd.Parameters.AddWithValue("@EUCID", eucId);
                 cmd.Parameters.AddWithValue("@Responsable", responsable);
-                cmd.Parameters.AddWithValue("@plan", plan);
+                cmd.Parameters.AddWithValue("@Plan", plan);
+
+                conn.Open();
+                cmd.ExecuteNonQuery(); 
             }
 
             Response.Redirect("DesarrolladorEUC.aspx");

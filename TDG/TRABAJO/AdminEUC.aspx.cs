@@ -1,168 +1,204 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Web.Services;
+using System.Data;
 using System.Data.SqlClient;
-using System.Configuration;
+using System.Web.UI;
+using System.Web.UI.WebControls;
 
 namespace TRABAJO
 {
     public partial class AdminEUC : System.Web.UI.Page
     {
-        private static string connString = ConfigurationManager.ConnectionStrings["PoliticasEUC"].ConnectionString;
+        private string connString = "Data Source=localhost;Initial Catalog=PoliticasEUC;Integrated Security=True";
 
-        public class EUC
+        protected void Page_Load(object sender, EventArgs e)
         {
-            public int EUCID { get; set; }
-            public string Nombre { get; set; }
-            public string Estado { get; set; }
-            public string Criticidad { get; set; }
-        }
-
-        public class EUCDetails
-        {
-            public EUC Info { get; set; }
-            public string Plan { get; set; }
-            public string ResponsablePlan { get; set; }
-            public string Documentacion { get; set; } // Podrías devolver JSON con todos los campos si lo necesitas
-            public string EstadoCertificacion { get; set; }
-        }
-
-        // ============================
-        // Listar EUCs
-        // ============================
-        [WebMethod]
-        public static List<EUC> GetEUCList()
-        {
-            List<EUC> lista = new List<EUC>();
-            using (SqlConnection conn = new SqlConnection(connString))
+            if (!IsPostBack)
             {
-                string query = "SELECT EUCID, Nombre, Estado, Criticidad FROM EUC";
-                SqlCommand cmd = new SqlCommand(query, conn);
+                CargarEUCs();
+            }
+        }
+
+        private void CargarEUCs()
+        {
+            DataTable dt = ObtenerEUCDesdeBD();
+            rptEUCs.DataSource = dt;
+            rptEUCs.DataBind();
+        }
+
+        private DataTable ObtenerEUCDesdeBD()
+        {
+            using (var conn = new SqlConnection(connString))
+            using (var cmd = new SqlCommand(@"
+        SELECT e.EUCID, e.Nombre, e.Descripcion, e.Criticidad, e.Estado,
+               ISNULL(c.EstadoCert, 'Pendiente') AS EstadoCert,
+               c.FechaControl
+        FROM dbo.EUC e
+        LEFT JOIN Certificacion c ON e.EUCID = c.EUCID
+        ORDER BY e.EUCID DESC;", conn))
+            using (var da = new SqlDataAdapter(cmd))
+            {
+                var dt = new DataTable();
                 conn.Open();
-                SqlDataReader reader = cmd.ExecuteReader();
-                while (reader.Read())
+                da.Fill(dt);
+                return dt;
+            }
+        }
+
+        private DataRow ObtenerPlanPorEUC(string eucId)
+        {
+            string query = "SELECT * FROM PlanAutomatizacion WHERE EUCID = @EUCID";
+            using (SqlConnection conn = new SqlConnection(connString))
+            using (SqlCommand cmd = new SqlCommand(query, conn))
+            {
+                cmd.Parameters.AddWithValue("@EUCID", eucId);
+                using (SqlDataAdapter da = new SqlDataAdapter(cmd))
                 {
-                    lista.Add(new EUC
-                    {
-                        EUCID = Convert.ToInt32(reader["EUCID"]),
-                        Nombre = reader["Nombre"].ToString(),
-                        Estado = reader["Estado"].ToString(),
-                        Criticidad = reader["Criticidad"].ToString()
-                    });
+                    DataTable dt = new DataTable();
+                    conn.Open();
+                    da.Fill(dt);
+                    return dt.Rows.Count > 0 ? dt.Rows[0] : null;
                 }
             }
-            return lista;
         }
 
-        // ============================
-        // Detalles de EUC
-        // ============================
-        [WebMethod]
-        public static EUCDetails GetEUCDetails(int id)
+        private DataRow ObtenerDocumentacionPorEUC(string eucId)
         {
-            EUCDetails details = new EUCDetails();
+            string query = "SELECT * FROM Documentacion WHERE EUCID = @EUCID";
             using (SqlConnection conn = new SqlConnection(connString))
+            using (SqlCommand cmd = new SqlCommand(query, conn))
             {
-                conn.Open();
-
-                // Info EUC
-                string queryEUC = "SELECT EUCID, Nombre, Estado, Criticidad FROM EUC WHERE EUCID=@Id";
-                SqlCommand cmdEUC = new SqlCommand(queryEUC, conn);
-                cmdEUC.Parameters.AddWithValue("@Id", id);
-                SqlDataReader readerEUC = cmdEUC.ExecuteReader();
-                if (readerEUC.Read())
+                cmd.Parameters.AddWithValue("@EUCID", eucId);
+                using (SqlDataAdapter da = new SqlDataAdapter(cmd))
                 {
-                    details.Info = new EUC
-                    {
-                        EUCID = Convert.ToInt32(readerEUC["EUCID"]),
-                        Nombre = readerEUC["Nombre"].ToString(),
-                        Estado = readerEUC["Estado"].ToString(),
-                        Criticidad = readerEUC["Criticidad"].ToString()
-                    };
+                    DataTable dt = new DataTable();
+                    conn.Open();
+                    da.Fill(dt);
+                    return dt.Rows.Count > 0 ? dt.Rows[0] : null;
                 }
-                readerEUC.Close();
-
-                // Plan
-                string queryPlan = "SELECT Responsable, [Plan] FROM PlanAutomatizacion WHERE EUCID=@Id";
-                SqlCommand cmdPlan = new SqlCommand(queryPlan, conn);
-                cmdPlan.Parameters.AddWithValue("@Id", id);
-                SqlDataReader readerPlan = cmdPlan.ExecuteReader();
-                if (readerPlan.Read())
-                {
-                    details.ResponsablePlan = readerPlan["Responsable"].ToString();
-                    details.Plan = readerPlan["Plan"].ToString();
-                }
-                readerPlan.Close();
-
-                // Documentación (simplificado)
-                string queryDoc = "SELECT Proposito FROM Documentacion WHERE EUCID=@Id";
-                SqlCommand cmdDoc = new SqlCommand(queryDoc, conn);
-                cmdDoc.Parameters.AddWithValue("@Id", id);
-                SqlDataReader readerDoc = cmdDoc.ExecuteReader();
-                if (readerDoc.Read())
-                {
-                    details.Documentacion = readerDoc["Proposito"].ToString();
-                }
-                readerDoc.Close();
-
-                // Certificación
-                string queryCert = "SELECT EstadoCert FROM Certificacion WHERE EUCID=@Id";
-                SqlCommand cmdCert = new SqlCommand(queryCert, conn);
-                cmdCert.Parameters.AddWithValue("@Id", id);
-                SqlDataReader readerCert = cmdCert.ExecuteReader();
-                if (readerCert.Read())
-                {
-                    details.EstadoCertificacion = readerCert["EstadoCert"].ToString();
-                }
-                readerCert.Close();
             }
-            return details;
         }
 
-        // ============================
-        // Aprobar EUC
-        // ============================
-        [WebMethod]
-        public static string ApproveEUC(int id)
+        protected void rptEUCs_ItemCommand(object source, RepeaterCommandEventArgs e)
         {
-            using (SqlConnection conn = new SqlConnection(connString))
+            string eucId = e.CommandArgument.ToString();
+
+            if (e.CommandName == "VerPlan")
             {
+                MostrarModalPlan(eucId);
+            }
+            else if (e.CommandName == "VerDoc")
+            {
+                MostrarModalDoc(eucId);
+            }
+            else if (e.CommandName == "Aprobar" || e.CommandName == "Rechazar")
+            {
+                TextBox txtComentario = (TextBox)e.Item.FindControl("txtComentario");
+                if (string.IsNullOrWhiteSpace(txtComentario.Text))
+                {
+                    lblError.Text = "Debe ingresar un comentario.";
+                    return;
+                }
+
+                bool aprobado = e.CommandName == "Aprobar";
+                CertificarEUC(eucId, aprobado, txtComentario.Text);
+                lblMsg.Text = aprobado ? "EUC aprobada correctamente." : "EUC rechazada correctamente.";
+                lblError.Text = "";
+                CargarEUCs();
+            }
+        }
+
+        private void MostrarModalPlan(string eucId)
+        {
+            var plan = ObtenerPlanPorEUC(eucId);
+            if (plan != null)
+            {
+                txtPlanResponsable.Text = plan["Responsable"].ToString();
+                txtPlan.Text = plan["Plan"].ToString();
+            }
+            else
+            {
+                txtPlanResponsable.Text = "";
+                txtPlan.Text = "";
+            }
+
+            ScriptManager.RegisterStartupScript(this, GetType(), "ShowPlanModal", "$('#mdlPlan').modal('show');", true);
+        }
+        private void MostrarModalDoc(string eucId)
+        {
+            var doc = ObtenerDocumentacionPorEUC(eucId);
+            if (doc != null)
+            {
+                txtDocNombreEUC.Text = doc["NombreEUC"].ToString();
+                txtDocProposito.Text = doc["Proposito"].ToString();
+                txtDocProceso.Text = doc["Proceso"].ToString();
+                txtDocUso.Text = doc["Uso"].ToString();
+                txtDocInsumos.Text = doc["Insumos"].ToString();
+                txtDocResponsable.Text = doc["Responsable"].ToString();
+                txtDocTecnica.Text = doc["DocTecnica"].ToString();
+                txtDocEvControl.Text = doc["EvControl"].ToString();
+            }
+            else
+            {
+                txtDocNombreEUC.Text = "";
+                txtDocProposito.Text = "";
+                txtDocProceso.Text = "";
+                txtDocUso.Text = "";
+                txtDocInsumos.Text = "";
+                txtDocResponsable.Text = "";
+                txtDocTecnica.Text = "";
+                txtDocEvControl.Text = "";
+            }
+
+            ScriptManager.RegisterStartupScript(this, GetType(), "ShowDocModal", "$('#mdlDoc').modal('show');", true);
+        }
+        private void CertificarEUC(string eucId, bool aprobado, string comentario)
+        {
+            string query = @"UPDATE Certificacion 
+                     SET EstadoCert = @EstadoCert, Observacion = @Observacion, FechaControl = GETDATE() 
+                     WHERE EUCID = @EUCID";
+
+            using (SqlConnection conn = new SqlConnection(connString))
+            using (SqlCommand cmd = new SqlCommand(query, conn))
+            {
+                cmd.Parameters.AddWithValue("@EstadoCert", aprobado ? "Aprobada" : "Rechazada");
+                cmd.Parameters.AddWithValue("@Observacion", comentario);
+                cmd.Parameters.AddWithValue("@EUCID", eucId);
+
                 conn.Open();
-                string query = "UPDATE Certificacion SET EstadoCert='Aprobado', FechaControl=GETDATE() WHERE EUCID=@Id";
-                SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@Id", id);
                 cmd.ExecuteNonQuery();
-
-                // Actualizar estado EUC
-                string updateEUC = "UPDATE EUC SET Estado='Completo' WHERE EUCID=@Id";
-                SqlCommand cmdEUC = new SqlCommand(updateEUC, conn);
-                cmdEUC.Parameters.AddWithValue("@Id", id);
-                cmdEUC.ExecuteNonQuery();
             }
-            return "EUC aprobada correctamente";
+
         }
 
-        // ============================
-        // Rechazar EUC
-        // ============================
-        [WebMethod]
-        public static string RejectEUC(int id)
+        public string GetCertificacionClass(string estadoCert)
         {
-            using (SqlConnection conn = new SqlConnection(connString))
+            switch (estadoCert.ToUpper())
             {
-                conn.Open();
-                string query = "UPDATE Certificacion SET EstadoCert='Rechazado', FechaControl=GETDATE() WHERE EUCID=@Id";
-                SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@Id", id);
-                cmd.ExecuteNonQuery();
-
-                // Actualizar estado EUC
-                string updateEUC = "UPDATE EUC SET Estado='Rechazado' WHERE EUCID=@Id";
-                SqlCommand cmdEUC = new SqlCommand(updateEUC, conn);
-                cmdEUC.Parameters.AddWithValue("@Id", id);
-                cmdEUC.ExecuteNonQuery();
+                case "APROBADA": return "bg-success text-white"; // verde
+                case "RECHAZADA": return "bg-danger text-white"; // rojo
+                default: return "bg-warning"; // amarillo para pendiente
             }
-            return "EUC rechazada correctamente";
+        }
+        public string GetCriticidadClass(string criticidad)
+        {
+            switch (criticidad.ToUpper())
+            {
+                case "ALTA": return "badge badge-crit-alta";
+                case "MEDIA": return "badge badge-crit-media";
+                case "BAJA": return "badge badge-crit-baja";
+                default: return "badge bg-secondary";
+            }
+        }
+
+        public string GetEstadoClass(string estado)
+        {
+            switch (estado.ToUpper())
+            {
+                case "ACTIVA": return "badge badge-estado-activa";
+                case "EN CONSTRUCCIÓN": return "badge badge-estado-enconstruccion";
+                case "JUBILADA": return "badge badge-estado-jubilada";
+                default: return "badge bg-secondary";
+            }
         }
     }
 }

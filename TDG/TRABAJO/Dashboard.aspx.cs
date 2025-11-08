@@ -1,94 +1,143 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Configuration;
+using System.Data;
 using System.Data.SqlClient;
-using System.Web.Services;
+using System.Security.Cryptography;
+using System.Web.UI;
+using System.Web.UI.HtmlControls;
 
 namespace TRABAJO
 {
     public partial class Dashboard : System.Web.UI.Page
     {
-        public class EUCDto
+
+        private static string connString = ConfigurationManager.ConnectionStrings["PoliticasEUC"].ConnectionString;
+        protected void Page_Load(object sender, EventArgs e)
         {
-            public int EUCID { get; set; }
-            public string Nombre { get; set; }
-            public string Criticidad { get; set; }   // ALTA|MEDIA|BAJA
-            public string Estado { get; set; }       // Activa|En construcción|Jubilada
-            public string Certificacion { get; set; }      // Aprobado|Rechazado|Pendiente
-            public string Documentacion { get; set; }      // Completa|Incompleta
-            public string PlanAutomatizacion { get; set; } // Completo|Incompleto
-            public string EstadoColor { get; set; }        // Verde|Rojo|Azul (para pintar)
+            if (!IsPostBack)
+            {
+                CargarDashboard();
+            }
         }
 
-        [WebMethod]
-        public static List<EUCDto> GetDashboardData()
+        protected System.Web.UI.HtmlControls.HtmlGenericControl kpiTotal;
+        protected System.Web.UI.HtmlControls.HtmlGenericControl kpiPlan;
+        protected System.Web.UI.HtmlControls.HtmlGenericControl kpiDoc;
+        protected System.Web.UI.HtmlControls.HtmlGenericControl kpiAprob;
+        protected System.Web.UI.HtmlControls.HtmlGenericControl kpiRech;
+        protected System.Web.UI.HtmlControls.HtmlGenericControl kpiPend;
+        protected System.Web.UI.HtmlControls.HtmlGenericControl detNombre;
+        protected System.Web.UI.HtmlControls.HtmlGenericControl detCrit;
+        protected System.Web.UI.HtmlControls.HtmlGenericControl detEstado;
+        protected System.Web.UI.HtmlControls.HtmlGenericControl detPlan;
+        protected System.Web.UI.HtmlControls.HtmlGenericControl detDoc;
+        protected System.Web.UI.HtmlControls.HtmlGenericControl detCert;
+        private void CargarDashboard()
         {
-            var list = new List<EUCDto>();
-            var cs = ConfigurationManager.ConnectionStrings["PoliticasEUC"].ConnectionString;
-
-            using (var conn = new SqlConnection(cs))
+            using (SqlConnection conn = new SqlConnection(connString))
             {
-                conn.Open();
+                string query = @"SELECT e.EUCID, e.Nombre, e.Criticidad, e.Estado,
+                                        CASE WHEN p.IdPlan IS NOT NULL THEN 1 ELSE 0 END AS TienePlan,
+                                        CASE WHEN d.IDoc IS NOT NULL THEN 1 ELSE 0 END AS TieneDoc,
+                                        ISNULL(c.EstadoCert, 'Pendiente') AS Certificacion
+                                 FROM EUC e
+                                 LEFT JOIN PlanAutomatizacion p ON e.EUCID = p.EUCID
+                                 LEFT JOIN Documentacion d ON e.EUCID = d.EUCID
+                                 LEFT JOIN Certificacion c ON e.EUCID = c.EUCID";
 
-                // Arma estados del dashboard a partir de tus tablas
-                var sql = @"
-SELECT
-    e.EUCID,
-    e.Nombre,
-    e.Criticidad,
-    e.Estado,
-    ISNULL(c.EstadoCert, 'Pendiente')       AS Certificacion,
-    CASE WHEN d.IDoc IS NULL  THEN 'Incompleta' ELSE 'Completa'   END AS Documentacion,
-    CASE WHEN p.IdPlan IS NULL THEN 'Incompleto' ELSE 'Completo'  END AS PlanAutomatizacion
-FROM EUC e
-LEFT JOIN Certificacion      c ON c.EUCID = e.EUCID
-LEFT JOIN Documentacion      d ON d.EUCID = e.EUCID
-LEFT JOIN PlanAutomatizacion p ON p.EUCID = e.EUCID
-ORDER BY e.EUCID DESC;";
+                SqlDataAdapter da = new SqlDataAdapter(query, conn);
+                DataTable dt = new DataTable();
+                da.Fill(dt);
 
-                using (var cmd = new SqlCommand(sql, conn))
-                using (var r = cmd.ExecuteReader())
+                gvDashboard.DataSource = dt;
+                gvDashboard.DataBind();
+
+                // KPIs
+                kpiTotal.InnerText = dt.Rows.Count.ToString();
+                kpiPlan.InnerText = dt.Select("TienePlan = 1").Length.ToString();
+                kpiDoc.InnerText = dt.Select("TieneDoc = 1").Length.ToString();
+                kpiAprob.InnerText = dt.Select("Certificacion = 'Aprobada'").Length.ToString();
+                kpiRech.InnerText = dt.Select("Certificacion = 'Rechazada'").Length.ToString();
+                kpiPend.InnerText = dt.Select("Certificacion = 'Pendiente'").Length.ToString();
+            }
+        }
+
+        protected string GetColorClass(object valor, string tipo)
+        {
+            if (tipo == "estado")
+            {
+                switch (valor.ToString())
                 {
-                    while (r.Read())
-                    {
-                        var cert = r["Certificacion"].ToString();
-                        var doc = r["Documentacion"].ToString();
-                        var plan = r["PlanAutomatizacion"].ToString();
-
-                        list.Add(new EUCDto
-                        {
-                            EUCID = Convert.ToInt32(r["EUCID"]),
-                            Nombre = r["Nombre"].ToString(),
-                            Criticidad = r["Criticidad"].ToString(),
-                            Estado = r["Estado"].ToString(),
-                            Certificacion = cert,
-                            Documentacion = doc,
-                            PlanAutomatizacion = plan,
-                            EstadoColor = CalcularEstado(cert, doc, plan) // 'Verde'|'Rojo'|'Azul'
-                        });
-                    }
+                    case "Activa": return "badge-estado-activa";
+                    case "En construcción": return "badge-estado-enconstruccion";
+                    case "Jubilada": return "badge-estado-jubilada";
                 }
             }
-            return list;
+            else if (tipo == "doc" || tipo == "plan")
+            {
+                return Convert.ToBoolean(valor) ? "chip chip-ok" : "chip chip-bad";
+            }
+            else if (tipo == "cert")
+            {
+                switch (valor.ToString())
+                {
+                    case "Aprobada": return "chip chip-ok";
+                    case "Rechazada": return "chip chip-bad";
+                    default: return "chip chip-warn";
+                }
+            }
+            return "";
         }
 
-        private static string CalcularEstado(string certificacion, string documentacion, string plan)
+        protected void gvDashboard_RowCommand(object sender, System.Web.UI.WebControls.GridViewCommandEventArgs e)
         {
-            certificacion = (certificacion ?? "").ToLowerInvariant();
-            documentacion = (documentacion ?? "").ToLowerInvariant();
-            plan = (plan ?? "").ToLowerInvariant();
+            int eucid = Convert.ToInt32(e.CommandArgument);
+            if (e.CommandName == "VerDoc" || e.CommandName == "VerPlan" || e.CommandName == "VerCert")
+            {
+                MostrarDetalle(eucid);
+                ScriptManager.RegisterStartupScript(this, this.GetType(), "ShowModal", "$('#mdlDetalle').modal('show');", true);
+            }
+        }
 
-            if ((certificacion.StartsWith("aprob")) &&
-                (documentacion == "completa") &&
-                (plan == "completo"))
-                return "Verde";
+        protected System.Web.UI.HtmlControls.HtmlGenericControl Span1; // Nombre
+        protected System.Web.UI.HtmlControls.HtmlGenericControl Span2; // Criticidad
+        protected System.Web.UI.HtmlControls.HtmlGenericControl Span3; // Estado
+        protected System.Web.UI.HtmlControls.HtmlGenericControl Div1;  // Plan
+        protected System.Web.UI.HtmlControls.HtmlGenericControl Div2;  // Documentación
+        protected System.Web.UI.HtmlControls.HtmlGenericControl Div3;  // Certificación
+        private void MostrarDetalle(int eucid)
+        {
+            string connStr = ConfigurationManager.ConnectionStrings["PoliticasEUC"].ConnectionString;
 
-            if (certificacion.StartsWith("rech") ||
-                documentacion == "incompleta" ||
-                plan == "incompleto")
-                return "Rojo";
+            using (SqlConnection conn = new SqlConnection(connStr))
+            {
+                string query = @"SELECT e.Nombre, e.Criticidad, e.Estado,
+                                p.[Plan], d.Proposito, d.Proceso, d.Uso, d.Insumos, d.DocTecnica,
+                                ISNULL(c.EstadoCert, 'Pendiente') AS EstadoCert
+                         FROM EUC e
+                         LEFT JOIN PlanAutomatizacion p ON e.EUCID = p.EUCID
+                         LEFT JOIN Documentacion d ON e.EUCID = d.EUCID
+                         LEFT JOIN Certificacion c ON e.EUCID = c.EUCID
+                         WHERE e.EUCID = @id";
 
-            return "Azul"; // pendiente / parcial
+                SqlCommand cmd = new SqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@id", eucid);
+
+                conn.Open();
+                SqlDataReader dr = cmd.ExecuteReader();
+                if (dr.Read())
+                {
+                    var content = Master.FindControl("MainContent");
+                    ((HtmlGenericControl)content.FindControl("Span1")).InnerText = dr["Nombre"].ToString();
+                    ((HtmlGenericControl)content.FindControl("Span2")).InnerText = dr["Criticidad"].ToString();
+                    ((HtmlGenericControl)content.FindControl("Span3")).InnerText = dr["Estado"].ToString();
+                    ((HtmlGenericControl)content.FindControl("Div1")).InnerText = string.IsNullOrEmpty(dr["Plan"].ToString()) ? "N/D" : dr["Plan"].ToString();
+                    ((HtmlGenericControl)content.FindControl("Div2")).InnerText = string.IsNullOrEmpty(dr["Proposito"].ToString()) ? "N/D" :
+                        $"Propósito: {dr["Proposito"]}\nProceso: {dr["Proceso"]}\nUso: {dr["Uso"]}\nInsumos: {dr["Insumos"]}\nDoc Técnica: {dr["DocTecnica"]}";
+                    ((HtmlGenericControl)content.FindControl("Div3")).InnerText = dr["EstadoCert"].ToString();
+                }
+            }
         }
     }
-}
+    
+ }
