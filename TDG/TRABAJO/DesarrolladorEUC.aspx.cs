@@ -124,26 +124,75 @@ namespace TRABAJO
             ScriptManager.RegisterStartupScript(this, GetType(), "ShowModal", "$('#mdlEucNuevo').modal('show');", true);
         }
 
-        protected void BtnEliminar_Click(object sender, EventArgs e)
+protected void BtnEliminar_Click(object sender, EventArgs e)
+    {
+        var btn = (Button)sender;
+        // EUCID viene en CommandArgument del botón
+        if (!int.TryParse(btn.CommandArgument, out int eucid))
         {
-            Button btn = (Button)sender;
-            string id = btn.CommandArgument;
-
-            string connectionString = "Data Source=localhost;Initial Catalog=PoliticasEUC;Integrated Security=True";
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                string query = "DELETE FROM EUC WHERE EUCID = @EUCID";
-                SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@EUCID", id);
-                conn.Open();
-                cmd.ExecuteNonQuery();
-            }
-
-            // Recargar la vista
-            Response.Redirect("DesarrolladorEUC.aspx");
+            // Manejo básico por si llega algo que no es INT
+            // TODO: si tienes un label para errores, muéstralo aquí
+            // lblError.Text = "Identificador inválido.";
+            return;
         }
 
-        private DataRow ObtenerPlanPorEUC(string eucId)
+        string connectionString = "Data Source=localhost;Initial Catalog=PoliticasEUC;Integrated Security=True";
+
+        using (var conn = new SqlConnection(connectionString))
+        {
+            conn.Open();
+
+            using (var tx = conn.BeginTransaction(IsolationLevel.ReadCommitted))
+            {
+                try
+                {
+                    // 1) Borrar HIJOS primero (ajusta nombres si difieren)
+                    //    Orden sugerido: Certificacion, Documentacion, PlanAutomatizacion
+                    using (var cmdHijos = new SqlCommand(@"
+                    DELETE FROM dbo.Certificacion       WHERE EUCID = @EUCID;
+                    DELETE FROM dbo.Documentacion       WHERE EUCID = @EUCID;
+                    DELETE FROM dbo.PlanAutomatizacion  WHERE EUCID = @EUCID;
+                ", conn, tx))
+                    {
+                        cmdHijos.Parameters.Add("@EUCID", SqlDbType.Int).Value = eucid;
+                        cmdHijos.ExecuteNonQuery();
+                    }
+
+                    // 2) Borrar PADRE
+                    using (var cmdPadre = new SqlCommand(@"DELETE FROM dbo.EUC WHERE EUCID = @EUCID;", conn, tx))
+                    {
+                        cmdPadre.Parameters.Add("@EUCID", SqlDbType.Int).Value = eucid;
+                        int rows = cmdPadre.ExecuteNonQuery();
+
+                        if (rows == 0)
+                        {
+                            // No existía la EUC (ya eliminada o id inválido)
+                            tx.Rollback();
+                            // TODO: mensaje amigable si usas labels en UI
+                            // lblError.Text = "La EUC no existe o ya fue eliminada.";
+                            return;
+                        }
+                    }
+
+                    // 3) Confirmar
+                    tx.Commit();
+                }
+                catch (SqlException)
+                {
+                    tx.Rollback();
+                    // TODO: opcional: mensaje en UI y logging
+                    // lblError.Text = "No se pudo eliminar la EUC. Intenta nuevamente.";
+                    throw; // o quítalo si prefieres manejarlo sin excepción
+                }
+            }
+        }
+
+        // Recargar la vista (false + CompleteRequest para evitar ThreadAbort)
+        Response.Redirect("DesarrolladorEUC.aspx", false);
+        Context.ApplicationInstance.CompleteRequest();
+    }
+
+    private DataRow ObtenerPlanPorEUC(string eucId)
         {
             string query = "SELECT * FROM PlanAutomatizacion WHERE EUCID = @EUCID";
             using (SqlConnection conn = new SqlConnection(connString))

@@ -8,21 +8,60 @@
         body, .page-bg { background:#f5f6f8; }
         .card-soft { background:#fff; border:1px solid #e9ecef; border-radius:.5rem; }
         .muted { color:#6c757d; }
-        .kpi { border-radius:.5rem; padding:1rem 1.25rem; color:#fff; }
-        .kpi-total { background:#0d6efd; }
-        .kpi-plan { background:#198754; }
-        .kpi-doc { background:#6f42c1; }
-        .kpi-aprob { background:#198754; }
-        .kpi-rech { background:#dc3545; }
-        .kpi-pend { background:#ffc107; color:#111; }
+        .kpi {
+    border-radius: .5rem;
+    padding: 1rem 1.25rem;
+    color: #111 !important;
+}
+
+.kpi-total { background: #0d6efd; }
+.kpi-plan { background: #198754; }
+.kpi-doc { background: #6f42c1; }
+.kpi-aprob { background: #198754; }
+.kpi-rech { background: #dc3545; }
+.kpi-pend { background: #ffc107; color: #111; } 
+ 
+/* KPI: títulos en negro */
+.kpi .muted {
+    color: #111 !important; /* Solo el título */
+}
+
+/* KPI: número en blanco */
+.kpi .h4,
+.kpi .h4 span {
+    color: #fff !important; /* Mantener número blanco */
+}
 
         /* Badges */
         .badge-crit-alta { background:#dc3545; }
         .badge-crit-media { background:#fd7e14; }
         .badge-crit-baja { background:#198754; }
-        .badge-estado-activa { background:#198754; }
-        .badge-estado-enconstruccion { background:#0d6efd; }
-        .badge-estado-jubilada { background:#6c757d; }
+        .badge-estado-activa {
+    background: #d3f9d8 !important;   /* verde claro */
+    color: #0f5132 !important;        /* texto verde oscuro */
+    border: 1px solid #b2f2bb !important;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: .15rem .4rem;
+}
+
+.badge-estado-enconstruccion {
+    background: #e7f1ff !important;   /* azul claro */
+    color: #0b5394 !important;        /* texto azul oscuro */
+    border: 1px solid #cddffe !important;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: .15rem .4rem;
+}
+
+.badge-estado-jubilada {
+    background: #f1f3f5 !important;   /* gris claro */
+    color: #343a40 !important;        /* texto gris oscuro */
+    border: 1px solid #e9ecef !important;
+    font-weight: 700;
+    border-radius: 999px;
+    padding: .15rem .4rem;
+}
         .chip { display:inline-block; padding:.25rem .5rem; border-radius:1rem; font-size:.75rem; margin-right:.35rem; }
         .chip-ok { background:#e6f4ea; color:#0f5132; border:1px solid #badbcc; }
         .chip-bad{ background:#fde8e8; color:#842029; border:1px solid #f5c2c7; }
@@ -59,44 +98,49 @@
     </div>
 
     <!-- KPIs -->
-    <div class="row g-3 mb-3">
-        <div class="col-6 col-md-2">
-            <div class="kpi kpi-total">
-                <div class="muted text-white-50">Total EUC</div>
-                <div class="h4 m-0"><span id="kpiTotal" runat="server">0</span></div>
-            </div>
-        </div>
-        <div class="col-6 col-md-2">
-            <div class="kpi kpi-plan">
-                <div class="muted text-white-50">Con Plan</div>
-                <div class="h4 m-0"><span id="kpiPlan" runat="server">0</span></div>
-            </div>
-        </div>
-        <div class="col-6 col-md-2">
-            <div class="kpi kpi-doc">
-                <div class="muted text-white-50">Con Doc</div>
-                <div class="h4 m-0"><span id="kpiDoc" runat="server">0</span></div>
-            </div>
-        </div>
-        <div class="col-6 col-md-2">
-            <div class="kpi kpi-aprob">
-                <div class="muted text-white-50">Aprobadas</div>
-                <div class="h4 m-0"><span id="kpiAprob" runat="server">0</span></div>
-            </div>
-        </div>
-        <div class="col-6 col-md-2">
-            <div class="kpi kpi-rech">
-                <div class="muted text-white-50">Rechazadas</div>
-                <div class="h4 m-0"><span id="kpiRech" runat="server">0</span></div>
-            </div>
-        </div>
-        <div class="col-6 col-md-2">
-            <div class="kpi kpi-pend">
-                <div class="muted text-dark-50">Pendientes</div>
-                <div class="h4 m-0"><span id="kpiPend" runat="server">0</span></div>
-            </div>
-        </div>
+   <div class="row g-3 mb-3">
+  <div class="col-6 col-md-2">
+    <div class="kpi kpi-total">
+      <div class="muted text-dark">Total EUC</div>
+      <div class="h4 m-0"><span id="kpiTotal" runat="server">0</span></div>
     </div>
+  </div>
+
+  <div class="col-6 col-md-2">
+    <div class="kpi kpi-plan">
+      <div class="muted text-dark">Con Plan</div>
+      <div class="h4 m-0"><span id="kpiPlan" runat="server">0</span></div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-2">
+    <div class="kpi kpi-doc">
+      <div class="muted text-dark">Con Doc</div>
+      <div class="h4 m-0"><span id="kpiDoc" runat="server">0</span></div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-2">
+    <div class="kpi kpi-aprob">
+      <div class="muted text-dark">Aprobadas</div>
+      <div class="h4 m-0"><span id="kpiAprob" runat="server">0</span></div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-2">
+    <div class="kpi kpi-rech">
+      <div class="muted text-dark">Rechazadas</div>
+      <div class="h4 m-0"><span id="kpiRech" runat="server">0</span></div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-2">
+    <div class="kpi kpi-pend">
+      <div class="muted text-dark">Pendientes</div>
+      <div class="h4 m-0"><span id="kpiPend" runat="server">0</span></div>
+    </div>
+  </div>
+</div>
 
     <!-- Filtros -->
     <div class="card-soft p-3 mb-3">

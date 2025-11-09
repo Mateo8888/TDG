@@ -29,77 +29,82 @@
         data-toggle="modal" data-target="#mdlEucNuevo">
     + Agregar EUC
 </button>
-    <!-- Modal nuevo con validaciones -->
-    <div class="modal fade" id="mdlEucNuevo" tabindex="-1" aria-labelledby="mdlEucNuevoLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="mdlEucNuevoLabel">Agregar EUC</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-                </div>
+   <div class="modal fade" id="mdlEucNuevo" tabindex="-1" aria-labelledby="mdlEucNuevoLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <!-- Igual que el modal de Plan -->
+      <div class="modal-header modal-header-warning">
+        <h5 class="modal-title" id="mdlEucNuevoLabel">Agregar EUC</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
 
-                <div class="modal-body">
-                     <asp:HiddenField ID="hfEUCID" runat="server" />
-                    <!-- Nombre -->
-                     <asp:TextBox ID="txtNombre" runat="server"
-                        CssClass="form-control mb-1"
-                        placeholder="Nombre EUC"></asp:TextBox>
-                        <asp:RequiredFieldValidator ID="rfvNombre" runat="server"
-                            ControlToValidate="txtNombre"
-                            ErrorMessage="El nombre es obligatorio."
-                              CssClass="text-danger" Display="Dynamic"
-                                ValidationGroup="EUC" />
-                    
+      <div class="modal-body">
+        <asp:HiddenField ID="hfEUCID" runat="server" />
+        <div class="row g-3">
+          <div class="col-md-12">
+            <label class="form-label required">Nombre</label>
+            <asp:TextBox ID="txtNombre" runat="server" CssClass="form-control" placeholder="Nombre EUC" />
+            <asp:RequiredFieldValidator ID="rfvNombre" runat="server"
+              ControlToValidate="txtNombre"
+              ErrorMessage="El nombre es obligatorio."
+              CssClass="text-danger d-block small" Display="Dynamic"
+              ValidationGroup="EUC" />
+          </div>
 
-                    <!-- Descripción -->
-                    <asp:TextBox ID="txtDescripcion" runat="server"
-                                 CssClass="form-control mb-1"
-                                 placeholder="Descripción EUC"></asp:TextBox>
-                    <asp:RequiredFieldValidator ID="rfvDescripcion" runat="server"
-                        ControlToValidate="txtDescripcion"
-                        ErrorMessage="La descripción es obligatoria."
-                        CssClass="text-danger" Display="Dynamic"
-                        ValidationGroup="EUC" />
+          <div class="col-md-12">
+            <label class="form-label required">Descripción</label>
+            <asp:TextBox ID="txtDescripcion" runat="server" CssClass="form-control" placeholder="Descripción EUC" />
+            <asp:RequiredFieldValidator ID="rfvDescripcion" runat="server"
+              ControlToValidate="txtDescripcion"
+              ErrorMessage="La descripción es obligatoria."
+              CssClass="text-danger d-block small" Display="Dynamic"
+              ValidationGroup="EUC" />
+          </div>
 
-                    <!-- Criticidad -->
-                    <asp:DropDownList ID="ddlCriticidad" runat="server" CssClass="form-select mb-1">
-                        <asp:ListItem Text="" Value="" />
-                        <asp:ListItem Text="ALTA" Value="ALTA" />
-                        <asp:ListItem Text="MEDIA" Value="MEDIA" />
-                        <asp:ListItem Text="BAJA" Value="BAJA" />
-                    </asp:DropDownList>
-                    <asp:RequiredFieldValidator ID="rfvCriticidad" runat="server"
-                        ControlToValidate="ddlCriticidad" InitialValue=""
-                        ErrorMessage="Selecciona una criticidad."
-                        CssClass="text-danger" Display="Dynamic"
-                        ValidationGroup="EUC" />
+          <div class="col-md-6">
+            <label class="form-label required">Criticidad</label>
+            <asp:DropDownList ID="ddlCriticidad" runat="server" CssClass="form-select" placeholder="Selecciona criticidad">
+              <asp:ListItem Text="" Value="" />
+              <asp:ListItem Text="ALTA" Value="ALTA" />
+              <asp:ListItem Text="MEDIA" Value="MEDIA" />
+              <asp:ListItem Text="BAJA" Value="BAJA" />
+            </asp:DropDownList>
+            <asp:RequiredFieldValidator ID="rfvCriticidad" runat="server"
+              ControlToValidate="ddlCriticidad" InitialValue=""
+              ErrorMessage="Selecciona una criticidad."
+              CssClass="text-danger d-block small" Display="Dynamic"
+              ValidationGroup="EUC" />
+          </div>
 
-                    <!-- Estado -->
-                    <asp:DropDownList ID="ddlEstado" runat="server" CssClass="form-select mb-1">
-                        <asp:ListItem Text="" Value="" />
-                        <asp:ListItem Text="Activa" Value="Activa" />
-                        <asp:ListItem Text="En construcción" Value="En construcción" />
-                        <asp:ListItem Text="Jubilada" Value="Jubilada" />
-                    </asp:DropDownList>
-                    <asp:RequiredFieldValidator ID="rfvEstado" runat="server"
-                        ControlToValidate="ddlEstado" InitialValue=""
-                        ErrorMessage="Selecciona un estado."
-                        CssClass="text-danger" Display="Dynamic"
-                        ValidationGroup="EUC" />
-
-                    <asp:ValidationSummary ID="vsEUC" runat="server"
-                        ValidationGroup="EUC" CssClass="text-danger mt-2" />
-                </div>
-
-                <div class="modal-footer">
-                    <asp:Button ID="Button1" runat="server"
-                        CssClass="btn btn-primary" Text="Guardar"
-                        ValidationGroup="EUC" CausesValidation="true"
-                        OnClick="btnGuardarEUC_Click" />
-                </div>
-            </div>
+          <div class="col-md-6">
+            <label class="form-label required">Estado</label>
+            <asp:DropDownList ID="ddlEstado" runat="server" CssClass="form-select" placeholder="Selecciona estado">
+              <asp:ListItem Text="" Value="" />
+              <asp:ListItem Text="Activa" Value="Activa" />
+              <asp:ListItem Text="En construcción" Value="En construcción" />
+              <asp:ListItem Text="Jubilada" Value="Jubilada" />
+            </asp:DropDownList>
+            <asp:RequiredFieldValidator ID="rfvEstado" runat="server"
+              ControlToValidate="ddlEstado" InitialValue=""
+              ErrorMessage="Selecciona un estado."
+              CssClass="text-danger d-block small" Display="Dynamic"
+              ValidationGroup="EUC" />
+          </div>
         </div>
+
+        <asp:ValidationSummary ID="vsEUC" runat="server"
+          ValidationGroup="EUC" CssClass="mt-3 p-2 border rounded small" />
+      </div>
+
+      <div class="modal-footer bg-light">
+        <asp:Button ID="Button1" runat="server"
+          CssClass="btn btn-primary" Text="Guardar"
+          ValidationGroup="EUC" CausesValidation="true"
+          OnClick="btnGuardarEUC_Click" />
+      </div>
     </div>
+  </div>
+</div>
 
     <div class="row">
 <asp:PlaceHolder ID="contenedorTarjetas" runat="server"></asp:PlaceHolder>
