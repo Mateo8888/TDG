@@ -3,7 +3,7 @@
 
 <asp:Content ID="cHead" ContentPlaceHolderID="HeadContent" runat="server">
     <style>
-        /* Paleta y layout */
+        
         .header-dash { background:#ffc107; color:#212529; border-radius:.5rem; }
         body, .page-bg { background:#f5f6f8; }
         .card-soft { background:#fff; border:1px solid #e9ecef; border-radius:.5rem; }
@@ -21,24 +21,24 @@
 .kpi-rech { background: #dc3545; }
 .kpi-pend { background: #ffc107; color: #111; } 
  
-/* KPI: títulos en negro */
+
 .kpi .muted {
-    color: #111 !important; /* Solo el título */
+    color: #111 !important; 
 }
 
-/* KPI: número en blanco */
+
 .kpi .h4,
 .kpi .h4 span {
-    color: #fff !important; /* Mantener número blanco */
+    color: #fff !important; 
 }
 
-        /* Badges */
+        
         .badge-crit-alta { background:#dc3545; }
         .badge-crit-media { background:#fd7e14; }
         .badge-crit-baja { background:#198754; }
         .badge-estado-activa {
-    background: #d3f9d8 !important;   /* verde claro */
-    color: #0f5132 !important;        /* texto verde oscuro */
+    background: #d3f9d8 !important;   
+    color: #0f5132 !important;        
     border: 1px solid #b2f2bb !important;
     font-weight: 700;
     border-radius: 999px;
@@ -46,8 +46,8 @@
 }
 
 .badge-estado-enconstruccion {
-    background: #e7f1ff !important;   /* azul claro */
-    color: #0b5394 !important;        /* texto azul oscuro */
+    background: #e7f1ff !important;   
+    color: #0b5394 !important;        
     border: 1px solid #cddffe !important;
     font-weight: 700;
     border-radius: 999px;
@@ -55,8 +55,8 @@
 }
 
 .badge-estado-jubilada {
-    background: #f1f3f5 !important;   /* gris claro */
-    color: #343a40 !important;        /* texto gris oscuro */
+    background: #f1f3f5 !important;   
+    color: #343a40 !important;        
     border: 1px solid #e9ecef !important;
     font-weight: 700;
     border-radius: 999px;
@@ -67,7 +67,7 @@
         .chip-bad{ background:#fde8e8; color:#842029; border:1px solid #f5c2c7; }
         .chip-warn{ background:#fff3cd; color:#664d03; border:1px solid #ffecb5; }
 
-        /* Estado general (color mapeado) */
+        
         .state-verde { border-left:4px solid #198754; }
         .state-azul  { border-left:4px solid #0d6efd; }
         .state-rojo  { border-left:4px solid #dc3545; }
@@ -78,12 +78,12 @@
 </asp:Content>
 
 <asp:Content ID="cMain" ContentPlaceHolderID="MainContent" runat="server">
-    <!-- Encabezado amarillo -->
+    
     <div class="header-dash p-4 mb-4">
         <div class="d-flex align-items-center flex-wrap gap-3">
             <div>
                 <h3 class="mb-1">Dashboard EUC</h3>
-                <div class="muted">Resumen global: Plan, Documentación y Certificación por cada EUC.</div>
+                <div class="muted">Aqui puedes observar un resumen general de todas las EUC registradas en el sistema.</div>
             </div>
             <div class="ms-auto d-flex gap-2">
                 <asp:Button ID="btnRefrescar" runat="server" CssClass="btn btn-dark" Text="Refrescar" />
@@ -91,13 +91,13 @@
         </div>
     </div>
 
-    <!-- Mensajes -->
+    
     <div class="mb-3">
         <span id="lblMsg" runat="server" class="text-success fw-semibold me-3"></span>
         <span id="lblError" runat="server" class="text-danger fw-semibold"></span>
     </div>
 
-    <!-- KPIs -->
+    
    <div class="row g-3 mb-3">
   <div class="col-6 col-md-2">
     <div class="kpi kpi-total">
@@ -142,48 +142,7 @@
   </div>
 </div>
 
-    <!-- Filtros -->
-    <div class="card-soft p-3 mb-3">
-        <div class="row g-3 align-items-end">
-            <div class="col-md-3">
-                <label class="form-label">Buscar</label>
-                <asp:TextBox ID="txtBuscar" runat="server" CssClass="form-control" Placeholder="Nombre..." />
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Criticidad</label>
-                <asp:DropDownList ID="ddlCriticidad" runat="server" CssClass="form-select">
-                    <asp:ListItem Value="">Todas</asp:ListItem>
-                    <asp:ListItem Value="ALTA">ALTA</asp:ListItem>
-                    <asp:ListItem Value="MEDIA">MEDIA</asp:ListItem>
-                    <asp:ListItem Value="BAJA">BAJA</asp:ListItem>
-                </asp:DropDownList>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Estado (EUC)</label>
-                <asp:DropDownList ID="ddlEstado" runat="server" CssClass="form-select">
-                    <asp:ListItem Value="">Todos</asp:ListItem>
-                    <asp:ListItem Value="Activa">Activa</asp:ListItem>
-                    <asp:ListItem Value="En construcción">En construcción</asp:ListItem>
-                    <asp:ListItem Value="Jubilada">Jubilada</asp:ListItem>
-                </asp:DropDownList>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Certificación</label>
-                <asp:DropDownList ID="ddlCert" runat="server" CssClass="form-select">
-                    <asp:ListItem Value="">Todas</asp:ListItem>
-                    <asp:ListItem Value="Aprobada">Aprobada</asp:ListItem>
-                    <asp:ListItem Value="Rechazada">Rechazada</asp:ListItem>
-                    <asp:ListItem Value="Pendiente">Pendiente</asp:ListItem>
-                </asp:DropDownList>
-            </div>
-            <div class="col-12 d-flex gap-2">
-                <asp:Button ID="btnFiltrar" runat="server" CssClass="btn btn-primary" Text="Filtrar" />
-                <asp:Button ID="btnLimpiar" runat="server" CssClass="btn btn-outline-secondary" Text="Limpiar" />
-            </div>
-        </div>
-    </div>
-
-    <!-- GridView -->
+   
     <asp:GridView ID="gvDashboard" runat="server" AutoGenerateColumns="False" CssClass="table table-bordered table-hover"
         OnRowCommand="gvDashboard_RowCommand">
         <Columns>
@@ -217,10 +176,11 @@
                     <span class='<%# GetColorClass(Eval("Estado"), "estado") %>'><%# Eval("Estado") %></span>
                 </ItemTemplate>
             </asp:TemplateField>
+            <asp:BoundField DataField="UsuariosActivos" HeaderText="Usuarios Activos" />
         </Columns>
     </asp:GridView>
 
-    <!-- Modal -->
+    
     <div class="modal fade" id="mdlDetalle" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content">

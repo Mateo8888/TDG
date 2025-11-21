@@ -16,8 +16,9 @@ namespace Negocio.PoliticasEUC
         public string Descripcion { get; set; }
         public string Criticidad { get; set; }
         public string Estado { get; set; }
+        public int  UsuariosActivos { get; set; }
 
-        // Navegación (opción B)
+       
         public List<Certificacion> Certificaciones { get; set; } = new List<Certificacion>();
         public List<Documentacion> Documentaciones { get; set; } = new List<Documentacion>();
         public List<PlanAutomatizacion> Planes { get; set; } = new List<PlanAutomatizacion>();
@@ -47,7 +48,7 @@ namespace Negocio.PoliticasEUC
                 }
             }
 
-            // READ - Todas
+            // READ 
             public List<EUC> ObtenerTodas()
             {
                 List<EUC> lista = new List<EUC>();
@@ -72,7 +73,7 @@ namespace Negocio.PoliticasEUC
                 return lista;
             }
 
-            // READ - Por ID
+            // READ 
             public EUC ObtenerPorId(int id)
             {
                 EUC euc = null;

@@ -90,6 +90,19 @@
               CssClass="text-danger d-block small" Display="Dynamic"
               ValidationGroup="EUC" />
           </div>
+            <div class="col-md-6">
+                    <label class="form-label">Usuarios activos</label>
+                    <asp:TextBox ID="txtUsuariosActivos" runat="server"
+                              CssClass="form-control"
+                            placeholder="Cantidad de usuarios que usan la EUC"
+                            TextMode="Number" />
+  <asp:RegularExpressionValidator ID="revUsuariosActivos" runat="server"
+    ControlToValidate="txtUsuariosActivos"
+    ValidationExpression="^\d*$"
+    ErrorMessage="Ingresa solo números enteros (o deja el campo vacío)."
+    CssClass="text-danger d-block small" Display="Dynamic"
+    ValidationGroup="EUC" />
+          </div>
         </div>
 
         <asp:ValidationSummary ID="vsEUC" runat="server"

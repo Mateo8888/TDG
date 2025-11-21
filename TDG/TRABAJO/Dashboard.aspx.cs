@@ -36,7 +36,7 @@ namespace TRABAJO
         {
             using (SqlConnection conn = new SqlConnection(connString))
             {
-                string query = @"SELECT e.EUCID, e.Nombre, e.Criticidad, e.Estado,
+                string query = @"SELECT e.EUCID, e.Nombre, e.Criticidad, e.Estado, e.UsuariosActivos,
                                         CASE WHEN p.IdPlan IS NOT NULL THEN 1 ELSE 0 END AS TienePlan,
                                         CASE WHEN d.IDoc IS NOT NULL THEN 1 ELSE 0 END AS TieneDoc,
                                         ISNULL(c.EstadoCert, 'Pendiente') AS Certificacion

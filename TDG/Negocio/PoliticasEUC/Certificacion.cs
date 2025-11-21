@@ -11,7 +11,7 @@ namespace Negocio.PoliticasEUC
 {
     public class Certificacion
     {
-        // Clave primaria (la setea el servicio)
+        // Clave primaria 
         public int IdCert { get; set; }
 
         // Referencia al padre EUC (FK)

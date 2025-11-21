@@ -1,5 +1,6 @@
 ﻿
-using Microsoft.Ajax.Utilities;
+
+using Negocio.PoliticasEUC;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
@@ -32,7 +33,7 @@ namespace TRABAJO
 
         protected void Page_Load(object sender, EventArgs e)
         {
-                CargarEUC();   
+            CargarEUC();
         }
 
         protected global::System.Web.UI.WebControls.PlaceHolder contenedorTarjetas;
@@ -56,7 +57,7 @@ namespace TRABAJO
                 body.Controls.Add(new Literal { Text = $"<h5 class='card-title'>{nombre}</h5><p>{descripcion}</p>" });
                 body.Controls.Add(new Literal { Text = $"<span class='badge bg-primary'>{criticidad}</span> <span class='badge bg-secondary'>{estado}</span><hr>" });
 
-                // Botón Editar
+                
                 Button btnEditar = new Button
                 {
                     Text = "Editar",
@@ -65,7 +66,7 @@ namespace TRABAJO
                 };
                 btnEditar.Click += BtnEditar_Click;
 
-                // Botón Eliminar
+                
                 Button btnEliminar = new Button
                 {
                     Text = "Eliminar",
@@ -74,7 +75,7 @@ namespace TRABAJO
                 };
                 btnEliminar.Click += BtnEliminar_Click;
 
-                // Botón Plan
+                
                 Button btnPlan = new Button
                 {
                     Text = "Plan",
@@ -83,7 +84,7 @@ namespace TRABAJO
                 };
                 btnPlan.Click += BtnPlan_Click;
 
-                // Botón Documentación
+                
                 Button btnDoc = new Button
                 {
                     Text = "Documentación",
@@ -92,7 +93,7 @@ namespace TRABAJO
                 };
                 btnDoc.Click += BtnDoc_Click;
 
-                // Agregar botones
+                
                 body.Controls.Add(btnEditar);
                 body.Controls.Add(btnEliminar);
                 body.Controls.Add(new Literal { Text = "<br/><br/>" });
@@ -124,75 +125,70 @@ namespace TRABAJO
             ScriptManager.RegisterStartupScript(this, GetType(), "ShowModal", "$('#mdlEucNuevo').modal('show');", true);
         }
 
-protected void BtnEliminar_Click(object sender, EventArgs e)
-    {
-        var btn = (Button)sender;
-        // EUCID viene en CommandArgument del botón
-        if (!int.TryParse(btn.CommandArgument, out int eucid))
+        protected void BtnEliminar_Click(object sender, EventArgs e)
         {
-            // Manejo básico por si llega algo que no es INT
-            // TODO: si tienes un label para errores, muéstralo aquí
-            // lblError.Text = "Identificador inválido.";
-            return;
-        }
+            var btn = (Button)sender;
 
-        string connectionString = "Data Source=localhost;Initial Catalog=PoliticasEUC;Integrated Security=True";
-
-        using (var conn = new SqlConnection(connectionString))
-        {
-            conn.Open();
-
-            using (var tx = conn.BeginTransaction(IsolationLevel.ReadCommitted))
+            if (!int.TryParse(btn.CommandArgument, out int eucid))
             {
-                try
+
+                return;
+            }
+
+            string connectionString = "Data Source=localhost;Initial Catalog=PoliticasEUC;Integrated Security=True";
+
+            using (var conn = new SqlConnection(connectionString))
+            {
+                conn.Open();
+
+                using (var tx = conn.BeginTransaction(IsolationLevel.ReadCommitted))
                 {
-                    // 1) Borrar HIJOS primero (ajusta nombres si difieren)
-                    //    Orden sugerido: Certificacion, Documentacion, PlanAutomatizacion
-                    using (var cmdHijos = new SqlCommand(@"
+                    try
+                    {
+
+                        using (var cmdHijos = new SqlCommand(@"
                     DELETE FROM dbo.Certificacion       WHERE EUCID = @EUCID;
                     DELETE FROM dbo.Documentacion       WHERE EUCID = @EUCID;
                     DELETE FROM dbo.PlanAutomatizacion  WHERE EUCID = @EUCID;
                 ", conn, tx))
-                    {
-                        cmdHijos.Parameters.Add("@EUCID", SqlDbType.Int).Value = eucid;
-                        cmdHijos.ExecuteNonQuery();
-                    }
-
-                    // 2) Borrar PADRE
-                    using (var cmdPadre = new SqlCommand(@"DELETE FROM dbo.EUC WHERE EUCID = @EUCID;", conn, tx))
-                    {
-                        cmdPadre.Parameters.Add("@EUCID", SqlDbType.Int).Value = eucid;
-                        int rows = cmdPadre.ExecuteNonQuery();
-
-                        if (rows == 0)
                         {
-                            // No existía la EUC (ya eliminada o id inválido)
-                            tx.Rollback();
-                            // TODO: mensaje amigable si usas labels en UI
-                            // lblError.Text = "La EUC no existe o ya fue eliminada.";
-                            return;
+                            cmdHijos.Parameters.Add("@EUCID", SqlDbType.Int).Value = eucid;
+                            cmdHijos.ExecuteNonQuery();
                         }
-                    }
 
-                    // 3) Confirmar
-                    tx.Commit();
-                }
-                catch (SqlException)
-                {
-                    tx.Rollback();
-                    // TODO: opcional: mensaje en UI y logging
-                    // lblError.Text = "No se pudo eliminar la EUC. Intenta nuevamente.";
-                    throw; // o quítalo si prefieres manejarlo sin excepción
+                        
+                        using (var cmdPadre = new SqlCommand(@"DELETE FROM dbo.EUC WHERE EUCID = @EUCID;", conn, tx))
+                        {
+                            cmdPadre.Parameters.Add("@EUCID", SqlDbType.Int).Value = eucid;
+                            int rows = cmdPadre.ExecuteNonQuery();
+
+                            if (rows == 0)
+                            {
+
+                                tx.Rollback();
+
+                                return;
+                            }
+                        }
+
+
+                        tx.Commit();
+                    }
+                    catch (SqlException)
+                    {
+                        tx.Rollback();
+
+                        throw;
+                    }
                 }
             }
+
+
+            Response.Redirect("DesarrolladorEUC.aspx", false);
+            Context.ApplicationInstance.CompleteRequest();
         }
 
-        // Recargar la vista (false + CompleteRequest para evitar ThreadAbort)
-        Response.Redirect("DesarrolladorEUC.aspx", false);
-        Context.ApplicationInstance.CompleteRequest();
-    }
-
-    private DataRow ObtenerPlanPorEUC(string eucId)
+        private DataRow ObtenerPlanPorEUC(string eucId)
         {
             string query = "SELECT * FROM PlanAutomatizacion WHERE EUCID = @EUCID";
             using (SqlConnection conn = new SqlConnection(connString))
@@ -260,9 +256,9 @@ protected void BtnEliminar_Click(object sender, EventArgs e)
             Button btn = (Button)sender;
             string eucId = btn.CommandArgument;
 
-            hfPlanEUCID.Value = eucId; // HiddenField en el modal Plan
+            hfPlanEUCID.Value = eucId;
 
-            // Consultar si existe un plan para esta EUC
+            
             var plan = ObtenerPlanPorEUC(eucId);
             if (plan != null)
             {
@@ -324,7 +320,7 @@ protected void BtnEliminar_Click(object sender, EventArgs e)
             ScriptManager.RegisterStartupScript(
      this,
      GetType(),
-     Guid.NewGuid().ToString(), // clave única para asegurar ejecución
+     Guid.NewGuid().ToString(), 
      @"
     (function() {
         var el = document.getElementById('mdlDoc');
@@ -365,7 +361,7 @@ protected void BtnEliminar_Click(object sender, EventArgs e)
                 cmd.Parameters.AddWithValue("@Plan", plan);
 
                 conn.Open();
-                cmd.ExecuteNonQuery(); 
+                cmd.ExecuteNonQuery();
             }
 
             Response.Redirect("DesarrolladorEUC.aspx");
@@ -421,7 +417,7 @@ protected void BtnEliminar_Click(object sender, EventArgs e)
         protected global::System.Web.UI.WebControls.GridView gvEUC;
         private void BindEUCs()
         {
-            // Usa la misma cadena que ya usas al insertar
+
             string connectionString = "Data Source=localhost;Initial Catalog=PoliticasEUC;Integrated Security=True";
 
             using (var conn = new SqlConnection(connectionString))
@@ -445,6 +441,9 @@ protected void BtnEliminar_Click(object sender, EventArgs e)
         protected global::System.Web.UI.WebControls.DropDownList ddlEstado;
         protected global::System.Web.UI.WebControls.Button btnGuardarEUC;
         protected global::System.Web.UI.WebControls.HiddenField hfEUCID;
+        protected global::System.Web.UI.WebControls.TextBox txtUsuariosActivos;
+        protected global::System.Web.UI.WebControls.ValidationSummary vsEUC;
+
 
         protected void btnGuardarEUC_Click(object sender, EventArgs e)
         {
@@ -452,9 +451,25 @@ protected void BtnEliminar_Click(object sender, EventArgs e)
             string descripcion = txtDescripcion.Text.Trim();
             string criticidad = ddlCriticidad.SelectedValue;
             string estado = ddlEstado.SelectedValue;
-            string id = hfEUCID.Value; // ID del EUC si estamos editando
+            string id = hfEUCID.Value;
 
-            // Validación básica
+            
+            int? usuariosActivos = null;
+            if (!string.IsNullOrWhiteSpace(txtUsuariosActivos.Text))
+            {
+                if (int.TryParse(txtUsuariosActivos.Text.Trim(), out int valor))
+                {
+                    usuariosActivos = valor;
+                }
+                else
+                {
+                    
+                    vsEUC.HeaderText = "Error: El campo Usuarios Activos debe ser numérico.";
+                    return;
+                }
+            }
+
+            
             if (string.IsNullOrEmpty(nombre) || string.IsNullOrEmpty(descripcion))
             {
                 return;
@@ -467,37 +482,40 @@ protected void BtnEliminar_Click(object sender, EventArgs e)
 
                 if (!string.IsNullOrEmpty(id))
                 {
-                    // ✅ Modo edición → UPDATE
                     string query = @"UPDATE EUC 
-                             SET Nombre=@Nombre, Descripcion=@Descripcion, Criticidad=@Criticidad, Estado=@Estado 
+                             SET Nombre=@Nombre, Descripcion=@Descripcion, Criticidad=@Criticidad, Estado=@Estado, UsuariosActivos=@UsuariosActivos
                              WHERE EUCID=@EUCID";
                     cmd = new SqlCommand(query, conn);
                     cmd.Parameters.AddWithValue("@EUCID", id);
                 }
                 else
                 {
-                    // ✅ Modo creación → INSERT
-                    string query = @"INSERT INTO EUC (Nombre, Descripcion, Criticidad, Estado)
-                             VALUES (@Nombre, @Descripcion, @Criticidad, @Estado)";
+                    string query = @"INSERT INTO EUC (Nombre, Descripcion, Criticidad, Estado, UsuariosActivos)
+                             VALUES (@Nombre, @Descripcion, @Criticidad, @Estado, @UsuariosActivos)";
                     cmd = new SqlCommand(query, conn);
                 }
 
-                // Parámetros comunes
+                
                 cmd.Parameters.AddWithValue("@Nombre", nombre);
                 cmd.Parameters.AddWithValue("@Descripcion", descripcion);
                 cmd.Parameters.AddWithValue("@Criticidad", criticidad);
                 cmd.Parameters.AddWithValue("@Estado", estado);
 
+                
+                if (usuariosActivos.HasValue)
+                    cmd.Parameters.AddWithValue("@UsuariosActivos", usuariosActivos.Value);
+                else
+                    cmd.Parameters.AddWithValue("@UsuariosActivos", DBNull.Value);
+
                 conn.Open();
                 cmd.ExecuteNonQuery();
             }
 
-            // ✅ Limpiar el HiddenField para evitar que quede en modo edición
             hfEUCID.Value = "";
-
-            // ✅ Recargar la página para mostrar cambios
             Response.Redirect("DesarrolladorEUC.aspx");
         }
+
+
     }
 
 }

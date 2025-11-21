@@ -91,7 +91,7 @@ namespace Negocio.PoliticasEUC
                 return nueva;
             }
 
-            // READ - Todas
+            // READ 
             public List<Documentacion> ObtenerTodas()
             {
                 List<Documentacion> lista = new List<Documentacion>();

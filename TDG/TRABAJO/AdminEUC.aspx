@@ -14,19 +14,19 @@
 </asp:Content>
 
 <asp:Content ID="cMain" ContentPlaceHolderID="MainContent" runat="server">
-    <!-- Encabezado -->
+    
     <div class="header-admin p-4 mb-4">
         <h3 class="mb-1">Administración de EUC</h3>
         <div class="muted">En esta seccion puedes revisa la información, Plan y Documentación de cada EUC; y certificar cada EUC como <b>Aprobada</b> o <b>Rechazada</b> con su respectiva información.</div>
     </div>
 
-    <!-- Mensajes -->
+    
     <div class="mb-3">
         <asp:Label ID="lblMsg" runat="server" CssClass="text-success fw-semibold me-3"></asp:Label>
         <asp:Label ID="lblError" runat="server" CssClass="text-danger fw-semibold"></asp:Label>
     </div>
 
-    <!-- Tarjetas dinámicas -->
+    
     <asp:Repeater ID="rptEUCs" runat="server" OnItemCommand="rptEUCs_ItemCommand">
     <ItemTemplate>
         <div class="card-soft mb-3 <%# GetCertificacionClass(Eval("EstadoCert").ToString()) %>">
