@@ -25,13 +25,21 @@ namespace TRABAJO
             rptEUCs.DataBind();
         }
 
+
         private DataTable ObtenerEUCDesdeBD()
         {
             using (var conn = new SqlConnection(connString))
             using (var cmd = new SqlCommand(@"
-        SELECT e.EUCID, e.Nombre, e.Descripcion, e.Criticidad, e.Estado,
-               ISNULL(c.EstadoCert, 'Pendiente') AS EstadoCert,
-               c.FechaControl
+        SELECT 
+            e.EUCID,
+            e.Nombre,
+            e.Descripcion,
+            e.Criticidad,
+            e.Estado,
+            e.Creador,
+            e.VersionEUC,
+            ISNULL(c.EstadoCert, 'Pendiente') AS EstadoCert,
+            c.FechaControl
         FROM dbo.EUC e
         LEFT JOIN Certificacion c ON e.EUCID = c.EUCID
         ORDER BY e.EUCID DESC;", conn))
@@ -43,6 +51,7 @@ namespace TRABAJO
                 return dt;
             }
         }
+
 
         private DataRow ObtenerPlanPorEUC(string eucId)
         {

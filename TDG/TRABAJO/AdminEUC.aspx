@@ -27,10 +27,17 @@
     </div>
 
     
-    <asp:Repeater ID="rptEUCs" runat="server" OnItemCommand="rptEUCs_ItemCommand">
+   
+<asp:Repeater ID="rptEUCs" runat="server" OnItemCommand="rptEUCs_ItemCommand">
     <ItemTemplate>
         <div class="card-soft mb-3 <%# GetCertificacionClass(Eval("EstadoCert").ToString()) %>">
             <h5><%# Eval("Nombre") %></h5>
+
+            <small class="text-muted d-block mb-2">
+                Versión: <strong><%# Eval("VersionEUC") %></strong> · 
+                Creador: <strong><%# Eval("Creador") %></strong>
+            </small>
+
             <p><%# Eval("Descripcion") %></p>
             <span class="badge <%# GetCriticidadClass(Eval("Criticidad").ToString()) %>"><%# Eval("Criticidad") %></span>
             <span class="badge <%# GetEstadoClass(Eval("Estado").ToString()) %>"><%# Eval("Estado") %></span>
@@ -58,41 +65,75 @@
     </ItemTemplate>
 </asp:Repeater>
 
-    <!-- Modal Plan -->
-    <div class="modal fade" id="mdlPlan" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header modal-header-warning">
-                    <h5 class="modal-title">Plan de automatización</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+
+    
+<div class="modal fade" id="mdlPlan" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title"><i class="bi bi-gear-fill me-2"></i>Plan de automatización</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Responsable</label>
+                    <asp:TextBox ID="txtPlanResponsable" runat="server" CssClass="form-control" ReadOnly="true" />
                 </div>
-                <div class="modal-body">
-                    <asp:TextBox ID="txtPlanResponsable" runat="server" CssClass="form-control mb-2" ReadOnly="true" />
-                    <asp:TextBox ID="txtPlan" runat="server" CssClass="form-control" ReadOnly="true" />
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Detalle del Plan</label>
+                    <asp:TextBox ID="txtPlan" runat="server" CssClass="form-control" TextMode="MultiLine" Rows="6" ReadOnly="true" />
                 </div>
             </div>
         </div>
     </div>
+</div>
+
 
     <!-- Modal Documentación -->
-    <div class="modal fade" id="mdlDoc" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header modal-header-warning">
-                    <h5 class="modal-title">Documentación de la EUC</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    
+<div class="modal fade" id="mdlDoc" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title"><i class="bi bi-file-earmark-text me-2"></i>Documentación de la EUC</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Nombre EUC</label>
+                    <asp:TextBox ID="txtDocNombreEUC" runat="server" CssClass="form-control" ReadOnly="true" />
                 </div>
-                <div class="modal-body">
-                    <asp:TextBox ID="txtDocNombreEUC" runat="server" CssClass="form-control mb-2" ReadOnly="true" />
-                    <asp:TextBox ID="txtDocProposito" runat="server" CssClass="form-control mb-2" ReadOnly="true" />
-                    <asp:TextBox ID="txtDocProceso" runat="server" CssClass="form-control mb-2" ReadOnly="true" />
-                    <asp:TextBox ID="txtDocUso" runat="server" CssClass="form-control mb-2" ReadOnly="true" />
-                    <asp:TextBox ID="txtDocInsumos" runat="server" CssClass="form-control mb-2" ReadOnly="true" />
-                    <asp:TextBox ID="txtDocResponsable" runat="server" CssClass="form-control mb-2" ReadOnly="true" />
-                    <asp:TextBox ID="txtDocTecnica" runat="server" CssClass="form-control mb-2" TextMode="MultiLine" ReadOnly="true" />
-                    <asp:TextBox ID="txtDocEvControl" runat="server" CssClass="form-control mb-2" ReadOnly="true" />
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Propósito</label>
+                    <asp:TextBox ID="txtDocProposito" runat="server" CssClass="form-control" ReadOnly="true" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Proceso</label>
+                    <asp:TextBox ID="txtDocProceso" runat="server" CssClass="form-control" ReadOnly="true" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Uso</label>
+                    <asp:TextBox ID="txtDocUso" runat="server" CssClass="form-control" ReadOnly="true" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Insumos</label>
+                    <asp:TextBox ID="txtDocInsumos" runat="server" CssClass="form-control" ReadOnly="true" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Responsable</label>
+                    <asp:TextBox ID="txtDocResponsable" runat="server" CssClass="form-control" ReadOnly="true" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Técnica</label>
+                    <asp:TextBox ID="txtDocTecnica" runat="server" CssClass="form-control" TextMode="MultiLine" Rows="4" ReadOnly="true" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Controles Aplicados</label>
+                    <asp:TextBox ID="txtDocEvControl" runat="server" CssClass="form-control" ReadOnly="true" />
                 </div>
             </div>
         </div>
     </div>
+</div>
+
 </asp:Content>

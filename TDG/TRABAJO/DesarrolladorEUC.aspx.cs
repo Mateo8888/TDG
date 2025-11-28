@@ -16,12 +16,14 @@ namespace TRABAJO
     {
         // Obtener cadena de conexión desde Web.config
         private static string connString = ConfigurationManager.ConnectionStrings["PoliticasEUC"].ConnectionString;
-
         private DataTable ObtenerEUCDesdeBD()
         {
             string connectionString = "Data Source=localhost;Initial Catalog=PoliticasEUC;Integrated Security=True";
             using (var conn = new SqlConnection(connectionString))
-            using (var cmd = new SqlCommand(@"SELECT EUCID, Nombre, Descripcion, Criticidad, Estado FROM dbo.EUC ORDER BY EUCID DESC;", conn))
+            using (var cmd = new SqlCommand(
+                @"SELECT EUCID, Nombre, Descripcion, Criticidad, Estado, UsuariosActivos, Creador, VersionEUC 
+          FROM dbo.EUC 
+          ORDER BY EUCID DESC;", conn))
             using (var da = new SqlDataAdapter(cmd))
             {
                 var dt = new DataTable();
@@ -30,6 +32,7 @@ namespace TRABAJO
                 return dt;
             }
         }
+
 
         protected void Page_Load(object sender, EventArgs e)
         {
@@ -57,7 +60,7 @@ namespace TRABAJO
                 body.Controls.Add(new Literal { Text = $"<h5 class='card-title'>{nombre}</h5><p>{descripcion}</p>" });
                 body.Controls.Add(new Literal { Text = $"<span class='badge bg-primary'>{criticidad}</span> <span class='badge bg-secondary'>{estado}</span><hr>" });
 
-                
+
                 Button btnEditar = new Button
                 {
                     Text = "Editar",
@@ -66,7 +69,7 @@ namespace TRABAJO
                 };
                 btnEditar.Click += BtnEditar_Click;
 
-                
+
                 Button btnEliminar = new Button
                 {
                     Text = "Eliminar",
@@ -75,7 +78,7 @@ namespace TRABAJO
                 };
                 btnEliminar.Click += BtnEliminar_Click;
 
-                
+
                 Button btnPlan = new Button
                 {
                     Text = "Plan",
@@ -84,7 +87,7 @@ namespace TRABAJO
                 };
                 btnPlan.Click += BtnPlan_Click;
 
-                
+
                 Button btnDoc = new Button
                 {
                     Text = "Documentación",
@@ -93,7 +96,7 @@ namespace TRABAJO
                 };
                 btnDoc.Click += BtnDoc_Click;
 
-                
+
                 body.Controls.Add(btnEditar);
                 body.Controls.Add(btnEliminar);
                 body.Controls.Add(new Literal { Text = "<br/><br/>" });
@@ -156,7 +159,7 @@ namespace TRABAJO
                             cmdHijos.ExecuteNonQuery();
                         }
 
-                        
+
                         using (var cmdPadre = new SqlCommand(@"DELETE FROM dbo.EUC WHERE EUCID = @EUCID;", conn, tx))
                         {
                             cmdPadre.Parameters.Add("@EUCID", SqlDbType.Int).Value = eucid;
@@ -258,7 +261,7 @@ namespace TRABAJO
 
             hfPlanEUCID.Value = eucId;
 
-            
+
             var plan = ObtenerPlanPorEUC(eucId);
             if (plan != null)
             {
@@ -320,7 +323,7 @@ namespace TRABAJO
             ScriptManager.RegisterStartupScript(
      this,
      GetType(),
-     Guid.NewGuid().ToString(), 
+     Guid.NewGuid().ToString(),
      @"
     (function() {
         var el = document.getElementById('mdlDoc');
@@ -415,14 +418,14 @@ namespace TRABAJO
         }
 
         protected global::System.Web.UI.WebControls.GridView gvEUC;
+
         private void BindEUCs()
         {
-
             string connectionString = "Data Source=localhost;Initial Catalog=PoliticasEUC;Integrated Security=True";
 
             using (var conn = new SqlConnection(connectionString))
             using (var cmd = new SqlCommand(
-                @"SELECT EUCID, Nombre, Descripcion, Criticidad, Estado 
+                @"SELECT EUCID, Nombre, Descripcion, Criticidad, Estado, UsuariosActivos, Creador, VersionEUC
           FROM dbo.EUC
           ORDER BY EUCID DESC;", conn))
             using (var da = new SqlDataAdapter(cmd))
@@ -435,6 +438,7 @@ namespace TRABAJO
             }
         }
 
+
         protected global::System.Web.UI.WebControls.TextBox txtNombre;
         protected global::System.Web.UI.WebControls.TextBox txtDescripcion;
         protected global::System.Web.UI.WebControls.DropDownList ddlCriticidad;
@@ -443,6 +447,10 @@ namespace TRABAJO
         protected global::System.Web.UI.WebControls.HiddenField hfEUCID;
         protected global::System.Web.UI.WebControls.TextBox txtUsuariosActivos;
         protected global::System.Web.UI.WebControls.ValidationSummary vsEUC;
+        protected global::System.Web.UI.WebControls.TextBox txtCreador;
+        protected global::System.Web.UI.WebControls.TextBox txtVersionEUC;
+
+
 
 
         protected void btnGuardarEUC_Click(object sender, EventArgs e)
@@ -451,9 +459,10 @@ namespace TRABAJO
             string descripcion = txtDescripcion.Text.Trim();
             string criticidad = ddlCriticidad.SelectedValue;
             string estado = ddlEstado.SelectedValue;
+            string creador = txtCreador.Text.Trim();
+            string versionEUC = txtVersionEUC.Text.Trim();
             string id = hfEUCID.Value;
 
-            
             int? usuariosActivos = null;
             if (!string.IsNullOrWhiteSpace(txtUsuariosActivos.Text))
             {
@@ -463,14 +472,13 @@ namespace TRABAJO
                 }
                 else
                 {
-                    
                     vsEUC.HeaderText = "Error: El campo Usuarios Activos debe ser numérico.";
                     return;
                 }
             }
 
-            
-            if (string.IsNullOrEmpty(nombre) || string.IsNullOrEmpty(descripcion))
+            if (string.IsNullOrEmpty(nombre) || string.IsNullOrEmpty(descripcion) ||
+                string.IsNullOrEmpty(creador) || string.IsNullOrEmpty(versionEUC))
             {
                 return;
             }
@@ -483,25 +491,26 @@ namespace TRABAJO
                 if (!string.IsNullOrEmpty(id))
                 {
                     string query = @"UPDATE EUC 
-                             SET Nombre=@Nombre, Descripcion=@Descripcion, Criticidad=@Criticidad, Estado=@Estado, UsuariosActivos=@UsuariosActivos
+                             SET Nombre=@Nombre, Descripcion=@Descripcion, Criticidad=@Criticidad, Estado=@Estado, 
+                                 UsuariosActivos=@UsuariosActivos, Creador=@Creador, VersionEUC=@VersionEUC
                              WHERE EUCID=@EUCID";
                     cmd = new SqlCommand(query, conn);
                     cmd.Parameters.AddWithValue("@EUCID", id);
                 }
                 else
                 {
-                    string query = @"INSERT INTO EUC (Nombre, Descripcion, Criticidad, Estado, UsuariosActivos)
-                             VALUES (@Nombre, @Descripcion, @Criticidad, @Estado, @UsuariosActivos)";
+                    string query = @"INSERT INTO EUC (Nombre, Descripcion, Criticidad, Estado, UsuariosActivos, Creador, VersionEUC)
+                             VALUES (@Nombre, @Descripcion, @Criticidad, @Estado, @UsuariosActivos, @Creador, @VersionEUC)";
                     cmd = new SqlCommand(query, conn);
                 }
 
-                
                 cmd.Parameters.AddWithValue("@Nombre", nombre);
                 cmd.Parameters.AddWithValue("@Descripcion", descripcion);
                 cmd.Parameters.AddWithValue("@Criticidad", criticidad);
                 cmd.Parameters.AddWithValue("@Estado", estado);
+                cmd.Parameters.AddWithValue("@Creador", creador);
+                cmd.Parameters.AddWithValue("@VersionEUC", versionEUC);
 
-                
                 if (usuariosActivos.HasValue)
                     cmd.Parameters.AddWithValue("@UsuariosActivos", usuariosActivos.Value);
                 else
@@ -517,5 +526,4 @@ namespace TRABAJO
 
 
     }
-
 }

@@ -17,8 +17,8 @@ namespace Negocio.PoliticasEUC
         public string Criticidad { get; set; }
         public string Estado { get; set; }
         public int  UsuariosActivos { get; set; }
-
-       
+        public string Creador { get; set; }
+        public string VersionEUC { get; set; }
         public List<Certificacion> Certificaciones { get; set; } = new List<Certificacion>();
         public List<Documentacion> Documentaciones { get; set; } = new List<Documentacion>();
         public List<PlanAutomatizacion> Planes { get; set; } = new List<PlanAutomatizacion>();

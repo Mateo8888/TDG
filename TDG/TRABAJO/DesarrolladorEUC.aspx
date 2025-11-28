@@ -104,6 +104,27 @@
     ValidationGroup="EUC" />
           </div>
         </div>
+          
+<div class="col-md-6">
+    <label class="form-label required">Creador</label>
+    <asp:TextBox ID="txtCreador" runat="server" CssClass="form-control" placeholder="Nombre del creador" />
+    <asp:RequiredFieldValidator ID="rfvCreador" runat="server"
+        ControlToValidate="txtCreador"
+        ErrorMessage="El creador es obligatorio."
+        CssClass="text-danger d-block small" Display="Dynamic"
+        ValidationGroup="EUC" />
+</div>
+
+<div class="col-md-6">
+    <label class="form-label required">Versión EUC</label>
+    <asp:TextBox ID="txtVersionEUC" runat="server" CssClass="form-control" placeholder="Versión (ej. v1.0)" />
+    <asp:RequiredFieldValidator ID="rfvVersionEUC" runat="server"
+        ControlToValidate="txtVersionEUC"
+        ErrorMessage="La versión es obligatoria."
+        CssClass="text-danger d-block small" Display="Dynamic"
+        ValidationGroup="EUC" />
+</div>
+
 
         <asp:ValidationSummary ID="vsEUC" runat="server"
           ValidationGroup="EUC" CssClass="mt-3 p-2 border rounded small" />
