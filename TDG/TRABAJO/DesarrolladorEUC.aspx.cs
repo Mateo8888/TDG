@@ -52,6 +52,9 @@ namespace TRABAJO
                 string descripcion = row["Descripcion"].ToString();
                 string criticidad = row["Criticidad"].ToString();
                 string estado = row["Estado"].ToString();
+                string usuariosActivos = row["UsuariosActivos"].ToString();
+                string creador = row["Creador"].ToString();
+                string versionEuc = row["VersionEUC"].ToString();
 
                 Panel card = new Panel { CssClass = "col-md-4 mb-3" };
                 Panel innerCard = new Panel { CssClass = "card shadow-sm" };
@@ -123,6 +126,9 @@ namespace TRABAJO
                 txtDescripcion.Text = rows[0]["Descripcion"].ToString();
                 ddlCriticidad.SelectedValue = rows[0]["Criticidad"].ToString();
                 ddlEstado.SelectedValue = rows[0]["Estado"].ToString();
+                txtUsuariosActivos.Text = rows[0]["UsuariosActivos"].ToString();
+                txtCreador.Text = rows[0]["Creador"].ToString();
+                txtVersionEUC.Text = rows[0]["VersionEUC"].ToString();
             }
 
             ScriptManager.RegisterStartupScript(this, GetType(), "ShowModal", "$('#mdlEucNuevo').modal('show');", true);
